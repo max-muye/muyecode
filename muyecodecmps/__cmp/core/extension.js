@@ -254,12 +254,20 @@ function activate(context) {
   const compileRunCommand = vscode.commands.registerCommand("muyecode.compileRun", () => {
     runCompiler(true);
   });
-  const smartEnterCommand = vscode.commands.registerCommand("muyecode.smartEnter", () => {
-    smartEnter();
-  });
+  let insertingEnd = false;
 
   const changeSubscription = vscode.workspace.onDidChangeTextDocument((event) => {
     if (event.document.languageId === "muyecode") {
+      if (!insertingEnd) {
+        maybeInsertEnd(event).then((changed) => {
+          insertingEnd = changed;
+          if (changed) {
+            setTimeout(() => {
+              insertingEnd = false;
+            }, 0);
+          }
+        });
+      }
       updateDiagnostics(event.document, diagnostics);
     }
   });
@@ -276,36 +284,54 @@ function activate(context) {
     updateDiagnostics(vscode.window.activeTextEditor.document, diagnostics);
   }
 
-  context.subscriptions.push(provider, diagnostics, compileCommand, runCommand, compileRunCommand, smartEnterCommand, changeSubscription, openSubscription, closeSubscription);
+  context.subscriptions.push(provider, diagnostics, compileCommand, runCommand, compileRunCommand, changeSubscription, openSubscription, closeSubscription);
 }
 
-function smartEnter() {
+async function maybeInsertEnd(event) {
   const editor = vscode.window.activeTextEditor;
 
-  if (!editor || editor.document.languageId !== "muyecode") {
-    vscode.commands.executeCommand("type", { text: "\n" });
-    return;
+  if (!editor || editor.document !== event.document || event.contentChanges.length !== 1) {
+    return false;
   }
 
-  const position = editor.selection.active;
-  const line = editor.document.lineAt(position.line).text;
-  const beforeCursor = line.slice(0, position.character);
+  const change = event.contentChanges[0];
 
-  if (!isBlockStarter(beforeCursor)) {
-    vscode.commands.executeCommand("type", { text: "\n" });
-    return;
+  if (!change.text.includes("\n")) {
+    return false;
   }
 
-  const baseIndent = beforeCursor.match(/^\s*/)[0];
+  const previousLineNumber = change.range.start.line;
+  const previousLine = event.document.lineAt(previousLineNumber).text;
+
+  if (!isBlockStarter(previousLine)) {
+    return false;
+  }
+
+  const nextLineNumber = previousLineNumber + 1;
+
+  if (nextLineNumber >= event.document.lineCount) {
+    return false;
+  }
+
+  const baseIndent = previousLine.match(/^\s*/)[0];
   const indentUnit = getIndentUnit(editor);
-  const insertText = `\n${baseIndent}${indentUnit}\n${baseIndent}end`;
-  const cursor = new vscode.Position(position.line + 1, baseIndent.length + indentUnit.length);
+  const nextLine = event.document.lineAt(nextLineNumber).text;
+  const wantedIndent = `${baseIndent}${indentUnit}`;
+  const insertPosition = new vscode.Position(nextLineNumber, nextLine.length);
+  const insertText = nextLine.trim() === "" && nextLine.length < wantedIndent.length
+    ? `${wantedIndent.slice(nextLine.length)}\n${baseIndent}end`
+    : `\n${baseIndent}end`;
 
-  editor.edit((edit) => {
-    edit.insert(position, insertText);
-  }).then(() => {
-    editor.selection = new vscode.Selection(cursor, cursor);
+  const changed = await editor.edit((edit) => {
+    edit.insert(insertPosition, insertText);
   });
+
+  if (changed) {
+    const cursor = new vscode.Position(nextLineNumber, wantedIndent.length);
+    editor.selection = new vscode.Selection(cursor, cursor);
+  }
+
+  return changed;
 }
 
 function isBlockStarter(text) {
