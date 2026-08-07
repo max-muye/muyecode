@@ -310,8 +310,46 @@ Drawing commands:
 - `fill color`
 - `line x1 y1 x2 y2`
 - `rect x y width height`
+- `box x y size`
 - `circle x y radius`
 - `text x y message size`
+
+## Games
+
+For browser canvas games, compile to `.html`.
+
+Useful game commands:
+
+- `game ms` starts a repeating loop and waits `ms` milliseconds each frame
+- `wait ms` pauses inside browser canvas mode
+- `key("ArrowUp")` checks if a key is pressed
+- `random(max)` returns a random integer from `0` to `max - 1`
+- `clear color` clears the whole canvas
+- `box x y size` draws a filled square
+
+Example:
+
+```muyecode
+canvas 400 400 "black"
+let x = 200
+let y = 200
+
+game 100
+    if key("ArrowRight")
+        change x = x + 20
+    end
+
+    clear "black"
+    fill "#22c55e"
+    box x y 20
+end
+```
+
+Run the snake example:
+
+```sh
+./muyecodecmp snake.muyecode -o snake.html -o run
+```
 
 ## Complete Example
 

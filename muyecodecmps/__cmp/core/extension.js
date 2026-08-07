@@ -171,6 +171,12 @@ const builtinCompletions = [
     detail: "Draw a rectangle"
   },
   {
+    label: "box",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "box ${1:x} ${2:y} ${3:size}",
+    detail: "Draw a filled square"
+  },
+  {
     label: "circle",
     kind: vscode.CompletionItemKind.Function,
     insertText: "circle ${1:x} ${2:y} ${3:radius}",
@@ -181,6 +187,36 @@ const builtinCompletions = [
     kind: vscode.CompletionItemKind.Function,
     insertText: "text ${1:x} ${2:y} ${3:\"message\"} ${4:24}",
     detail: "Draw text"
+  },
+  {
+    label: "clear",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "clear ${1:\"white\"}",
+    detail: "Clear the canvas"
+  },
+  {
+    label: "wait",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "wait ${1:100}",
+    detail: "Pause in HTML canvas mode"
+  },
+  {
+    label: "game",
+    kind: vscode.CompletionItemKind.Snippet,
+    insertText: "game ${1:100}\n\t$0\nend",
+    detail: "Create a repeating game loop"
+  },
+  {
+    label: "key",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "key(${1:\"ArrowUp\"})",
+    detail: "Check keyboard state in HTML canvas mode"
+  },
+  {
+    label: "random",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "random(${1:max})",
+    detail: "Random integer from 0 to max - 1"
   }
 ];
 

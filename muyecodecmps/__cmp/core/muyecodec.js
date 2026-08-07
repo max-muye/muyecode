@@ -464,18 +464,28 @@ class HtmlCompiler {
       return;
     }
 
-    if (rawLine.startsWith("value ")) {
+    if (rawLine.startsWith("value ") || rawLine.startsWith("let ")) {
       this.pushLines(compileValue(rawLine, lineNumber, "let"));
       return;
     }
 
-    if (rawLine.startsWith("set ")) {
+    if (rawLine.startsWith("set ") || rawLine.startsWith("change ")) {
       this.pushLine(compileSet(rawLine, lineNumber));
       return;
     }
 
-    if (rawLine.startsWith("print ")) {
+    if (rawLine.startsWith("print ") || rawLine.startsWith("say ")) {
       this.pushLine(compilePrint(rawLine));
+      return;
+    }
+
+    if (rawLine.startsWith("wait ") || rawLine.startsWith("sleep ")) {
+      this.pushLine(compileWait(rawLine));
+      return;
+    }
+
+    if (rawLine.startsWith("game ")) {
+      this.compileGame(rawLine);
       return;
     }
 
@@ -496,6 +506,16 @@ class HtmlCompiler {
 
     if (rawLine.startsWith("return")) {
       this.pushLine(compileReturn(rawLine));
+      return;
+    }
+
+    if (/^(?:this|[A-Za-z_][A-Za-z0-9_]*)(?:\.[A-Za-z_][A-Za-z0-9_]*)+\s*=/.test(rawLine)) {
+      this.pushLine(`${rawLine};`);
+      return;
+    }
+
+    if (/^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+\s*\(.*\)$/.test(rawLine)) {
+      this.pushLine(`${rawLine};`);
       return;
     }
 
@@ -549,6 +569,14 @@ class HtmlCompiler {
     this.indent += 1;
   }
 
+  compileGame(line) {
+    const ms = line.slice("game ".length).trim();
+    this.pushLine(`while (true) {`);
+    this.blockStack.push("game");
+    this.indent += 1;
+    this.pushLine(`await sleep(${ms});`);
+  }
+
   compileEnd(lineNumber) {
     if (this.blockStack.length === 0) {
       throw new Error(`Line ${lineNumber}: end has no open block`);
@@ -584,9 +612,20 @@ class HtmlCompiler {
       "    const str = (value) => String(value);",
       "    const num = (value) => Number(value);",
       "    const print = (...values) => console.log(values.map(str).join(\" \"));",
+      "    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));",
+      "    const random = (max) => Math.floor(Math.random() * max);",
+      "    const push = (list, value) => list.push(value);",
+      "    const removefirst = (list) => list.shift();",
+      "    const keys = {};",
+      "    const key = (name) => !!keys[name];",
+      "    window.addEventListener(\"keydown\", (event) => { keys[event.key] = true; });",
+      "    window.addEventListener(\"keyup\", (event) => { keys[event.key] = false; });",
       `    ctx.fillStyle = ${this.background};`,
       "    ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);",
+      "    async function main() {",
       ...this.output.map((line) => `    ${line}`),
+      "    }",
+      "    main();",
       "  </script>",
       "</body>",
       "</html>",
@@ -887,8 +926,13 @@ function compileReturn(line) {
   return body ? `return ${body};` : "return;";
 }
 
+function compileWait(line) {
+  const body = line.replace(/^(wait|sleep)\s+/, "").trim();
+  return `await sleep(${body});`;
+}
+
 function isDrawingCommand(line) {
-  return /^(canvas|pen|fill|line|rect|circle|text)\b/.test(line);
+  return /^(canvas|pen|fill|line|rect|box|circle|text|clear)\b/.test(line);
 }
 
 function isFileCommand(line) {
@@ -952,12 +996,20 @@ function compileCanvasDrawingCommand(line, lineNumber) {
     return `ctx.fillStyle = __muyecodeFill; ctx.strokeStyle = __muyecodeColor; ctx.lineWidth = __muyecodeWidth; ctx.fillRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}); ctx.strokeRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]});`;
   }
 
+  if (command === "box") {
+    return `ctx.fillStyle = __muyecodeFill; ctx.fillRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[2]});`;
+  }
+
   if (command === "circle") {
     return `ctx.fillStyle = __muyecodeFill; ctx.strokeStyle = __muyecodeColor; ctx.lineWidth = __muyecodeWidth; ctx.beginPath(); ctx.arc(${args[0]}, ${args[1]}, ${args[2]}, 0, Math.PI * 2); ctx.fill(); ctx.stroke();`;
   }
 
   if (command === "text") {
     return `ctx.fillStyle = __muyecodeColor; ctx.font = ${args[3] || "24"} + "px Arial"; ctx.fillText(${args[2]}, ${args[0]}, ${args[1]});`;
+  }
+
+  if (command === "clear") {
+    return `ctx.fillStyle = ${args[0] || "\"white\""}; ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);`;
   }
 
   throw new Error(`Line ${lineNumber}: unknown drawing command "${command}"`);
@@ -987,6 +1039,7 @@ function splitTopLevel(text, separator) {
   const parts = [];
   let current = "";
   let quote = null;
+  let depth = 0;
 
   for (let index = 0; index < text.length; index += 1) {
     const char = text[index];
@@ -996,7 +1049,15 @@ function splitTopLevel(text, separator) {
       quote = quote === char ? null : quote || char;
     }
 
-    if (char === separator && !quote) {
+    if (!quote && (char === "(" || char === "[" || char === "{")) {
+      depth += 1;
+    }
+
+    if (!quote && (char === ")" || char === "]" || char === "}")) {
+      depth -= 1;
+    }
+
+    if (char === separator && !quote && depth === 0) {
       parts.push(current);
       current = "";
       continue;

@@ -12,6 +12,7 @@ It includes:
 - a compiler command: `./muyecodecmp`
 - classes and simpler aliases like `let`, `say`, and `change`
 - JavaScript output
+- browser canvas game output
 - native macOS drawing executable output
 
 ## Get It
@@ -107,6 +108,16 @@ Build a real macOS executable:
 ./muyecodecmp drawing.muyecode -o drawing_muyecode_exec -o exec
 ./drawing_muyecode_exec
 ```
+
+## Browser Game
+
+Muyecode can make browser canvas games.
+
+```sh
+./muyecodecmp snake.muyecode -o snake.html -o run
+```
+
+Game helpers include `game`, `wait`, `key`, `random`, `clear`, and `box`.
 
 
 ## Notes
