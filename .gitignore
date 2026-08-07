@@ -1,5 +1,7 @@
 # Personal Muyecode programs and local test files
 *.muyecode
+!examples/
+!examples/*.muyecode
 mcmp
 
 # Compiler outputs

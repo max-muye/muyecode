@@ -145,6 +145,12 @@ game.run()
 
 Files that use `canvas`, `wait`, `sleep`, or `key(...)` automatically open as a canvas window when no output filename is provided.
 
+The full snake example is in:
+
+```text
+examples/snake.muyecode
+```
+
 ## Notes
 
 Compiler outputs are ignored by git. The compiler internals live in:

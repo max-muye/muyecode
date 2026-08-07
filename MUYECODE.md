@@ -354,7 +354,7 @@ game.run()
 Run the snake example:
 
 ```sh
-./muyecodecmp snake.muyecode -o run
+./muyecodecmp examples/snake.muyecode -o run
 ```
 
 Files that use `canvas`, `wait`, `sleep`, or `key(...)` automatically compile to a canvas window when no output filename is provided.
