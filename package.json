@@ -16,7 +16,8 @@
   "main": "./extension.js",
   "bin": {
     "muyecodec": "./muyecodecmps/__cmp/core/muyecodec.js",
-    "muyecodecmp": "./muyecodecmp"
+    "muyecodecmp": "./muyecodecmp",
+    "muyecodecmp.cmd": "./muyecodecmp.cmd"
   },
   "contributes": {
     "languages": [

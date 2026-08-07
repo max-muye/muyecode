@@ -33,11 +33,19 @@ function main() {
     if (outputPath.endsWith(".html")) {
       openFile(outputPath);
     } else if (outputPath.endsWith(".py") || options.makeExecutable) {
-      childProcess.spawnSync(outputPath.startsWith("/") ? outputPath : `./${outputPath}`, { stdio: "inherit", shell: true });
+      childProcess.spawnSync(getExecutableRunPath(outputPath), { stdio: "inherit", shell: true });
     } else {
       require(path.resolve(outputPath));
     }
   }
+}
+
+function getExecutableRunPath(outputPath) {
+  if (path.isAbsolute(outputPath)) {
+    return outputPath;
+  }
+
+  return process.platform === "win32" ? outputPath : `./${outputPath}`;
 }
 
 function resolveOutputPath(options) {
@@ -156,6 +164,11 @@ function compileTkinter(source) {
 }
 
 function compileNativeExecutable(source, outputPath, inputPath) {
+  if (process.platform === "win32") {
+    compileWindowsExecutable(source, ensureWindowsExecutablePath(outputPath), inputPath);
+    return;
+  }
+
   const objectiveCPath = getCompilerModulePath(inputPath, outputPath, ".m");
   fs.mkdirSync(path.dirname(objectiveCPath), { recursive: true });
   fs.writeFileSync(objectiveCPath, compileCocoa(source));
@@ -179,6 +192,38 @@ function compileNativeExecutable(source, outputPath, inputPath) {
   fs.chmodSync(outputPath, 0o755);
 }
 
+function compileWindowsExecutable(source, outputPath, inputPath) {
+  const cPath = getCompilerModulePath(inputPath, outputPath, ".c");
+  fs.mkdirSync(path.dirname(cPath), { recursive: true });
+  fs.writeFileSync(cPath, compileWin32(source));
+
+  const compiler = findWindowsCompiler();
+  const args = compiler === "cl"
+    ? ["/nologo", cPath, "user32.lib", "gdi32.lib", `/Fe:${outputPath}`]
+    : [cPath, "-municode", "-mwindows", "-lgdi32", "-o", outputPath];
+  const result = childProcess.spawnSync(compiler, args, { encoding: "utf8", shell: true });
+
+  if (result.status !== 0) {
+    throw new Error(result.stderr || result.stdout || "Windows executable compile failed");
+  }
+}
+
+function ensureWindowsExecutablePath(outputPath) {
+  return outputPath.toLowerCase().endsWith(".exe") ? outputPath : `${outputPath}.exe`;
+}
+
+function findWindowsCompiler() {
+  for (const compiler of ["cl", "gcc"]) {
+    const result = childProcess.spawnSync("where", [compiler], { encoding: "utf8", shell: true });
+
+    if (result.status === 0) {
+      return compiler;
+    }
+  }
+
+  throw new Error("Windows exec output needs either Visual Studio Build Tools `cl` or MinGW `gcc` on PATH.");
+}
+
 function getCompilerModulePath(inputPath, outputPath, extension) {
   const sourceName = path.basename(inputPath, path.extname(inputPath));
   const outputName = path.basename(outputPath);
@@ -188,6 +233,17 @@ function getCompilerModulePath(inputPath, outputPath, extension) {
 function compileCocoa(source) {
   const lines = source.split(/\r?\n/);
   const compiler = new CocoaCompiler();
+
+  for (let lineNumber = 0; lineNumber < lines.length; lineNumber += 1) {
+    compiler.compileLine(stripComment(lines[lineNumber]).trim(), lineNumber + 1);
+  }
+
+  return compiler.finish();
+}
+
+function compileWin32(source) {
+  const lines = source.split(/\r?\n/);
+  const compiler = new Win32Compiler();
 
   for (let lineNumber = 0; lineNumber < lines.length; lineNumber += 1) {
     compiler.compileLine(stripComment(lines[lineNumber]).trim(), lineNumber + 1);
@@ -788,6 +844,180 @@ class CocoaCompiler {
   }
 }
 
+class Win32Compiler {
+  constructor() {
+    this.width = "640";
+    this.height = "420";
+    this.background = "\"white\"";
+    this.penColor = "\"black\"";
+    this.fillColor = "\"transparent\"";
+    this.penWidth = "2";
+    this.drawLines = [];
+  }
+
+  compileLine(rawLine, lineNumber) {
+    if (!rawLine || rawLine.startsWith("save")) {
+      return;
+    }
+
+    if (rawLine.startsWith("canvas ")) {
+      const args = splitCommandArgs(rawLine.slice("canvas ".length).trim());
+      this.width = args[0] || this.width;
+      this.height = args[1] || this.height;
+      this.background = args[2] || this.background;
+      return;
+    }
+
+    if (rawLine.startsWith("pen ")) {
+      const args = splitCommandArgs(rawLine.slice("pen ".length).trim());
+      this.penColor = args[0] || this.penColor;
+      this.penWidth = args[1] || this.penWidth;
+      return;
+    }
+
+    if (rawLine.startsWith("fill ")) {
+      const args = splitCommandArgs(rawLine.slice("fill ".length).trim());
+      this.fillColor = args[0] || "\"transparent\"";
+      return;
+    }
+
+    if (rawLine.startsWith("line ")) {
+      const args = splitCommandArgs(rawLine.slice("line ".length).trim());
+      this.drawLines.push(`drawLine(hdc, ${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, L${cString(this.penColor)}, ${this.penWidth});`);
+      return;
+    }
+
+    if (rawLine.startsWith("rect ")) {
+      const args = splitCommandArgs(rawLine.slice("rect ".length).trim());
+      this.drawLines.push(`drawRect(hdc, ${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, L${cString(this.penColor)}, L${cString(this.fillColor)}, ${this.penWidth});`);
+      return;
+    }
+
+    if (rawLine.startsWith("circle ")) {
+      const args = splitCommandArgs(rawLine.slice("circle ".length).trim());
+      this.drawLines.push(`drawCircle(hdc, ${args[0]}, ${args[1]}, ${args[2]}, L${cString(this.penColor)}, L${cString(this.fillColor)}, ${this.penWidth});`);
+      return;
+    }
+
+    if (rawLine.startsWith("text ")) {
+      const args = splitCommandArgs(rawLine.slice("text ".length).trim());
+      this.drawLines.push(`drawTextLine(hdc, ${args[0]}, ${args[1]}, L${cString(args[2])}, ${args[3] || "24"}, L${cString(this.penColor)});`);
+      return;
+    }
+
+    throw new Error(`Line ${lineNumber}: Windows exec output supports drawing commands, got "${rawLine}"`);
+  }
+
+  finish() {
+    const width = stripQuotes(this.width);
+    const height = stripQuotes(this.height);
+    return [
+      "#define UNICODE",
+      "#define _UNICODE",
+      "#include <windows.h>",
+      "#include <wchar.h>",
+      "",
+      "static COLORREF colorFromString(const wchar_t *value) {",
+      "  if (!value || wcscmp(value, L\"\") == 0 || wcscmp(value, L\"none\") == 0 || wcscmp(value, L\"transparent\") == 0) return CLR_INVALID;",
+      "  if (value[0] == L'#' && wcslen(value) == 7) {",
+      "    unsigned int r = 0, g = 0, b = 0;",
+      "    swscanf(value + 1, L\"%02x%02x%02x\", &r, &g, &b);",
+      "    return RGB(r, g, b);",
+      "  }",
+      "  if (wcscmp(value, L\"white\") == 0) return RGB(255, 255, 255);",
+      "  if (wcscmp(value, L\"black\") == 0) return RGB(0, 0, 0);",
+      "  if (wcscmp(value, L\"red\") == 0) return RGB(255, 0, 0);",
+      "  if (wcscmp(value, L\"green\") == 0) return RGB(0, 128, 0);",
+      "  if (wcscmp(value, L\"blue\") == 0) return RGB(0, 0, 255);",
+      "  if (wcscmp(value, L\"yellow\") == 0) return RGB(255, 255, 0);",
+      "  return RGB(0, 0, 0);",
+      "}",
+      "",
+      "static void drawLine(HDC hdc, int x1, int y1, int x2, int y2, const wchar_t *stroke, int width) {",
+      "  HPEN pen = CreatePen(PS_SOLID, width, colorFromString(stroke));",
+      "  HPEN oldPen = (HPEN)SelectObject(hdc, pen);",
+      "  MoveToEx(hdc, x1, y1, NULL);",
+      "  LineTo(hdc, x2, y2);",
+      "  SelectObject(hdc, oldPen);",
+      "  DeleteObject(pen);",
+      "}",
+      "",
+      "static void drawRect(HDC hdc, int x, int y, int width, int height, const wchar_t *stroke, const wchar_t *fill, int lineWidth) {",
+      "  HPEN pen = CreatePen(PS_SOLID, lineWidth, colorFromString(stroke));",
+      "  HBRUSH brush = colorFromString(fill) == CLR_INVALID ? (HBRUSH)GetStockObject(NULL_BRUSH) : CreateSolidBrush(colorFromString(fill));",
+      "  HPEN oldPen = (HPEN)SelectObject(hdc, pen);",
+      "  HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, brush);",
+      "  Rectangle(hdc, x, y, x + width, y + height);",
+      "  SelectObject(hdc, oldBrush);",
+      "  SelectObject(hdc, oldPen);",
+      "  if (colorFromString(fill) != CLR_INVALID) DeleteObject(brush);",
+      "  DeleteObject(pen);",
+      "}",
+      "",
+      "static void drawCircle(HDC hdc, int x, int y, int radius, const wchar_t *stroke, const wchar_t *fill, int lineWidth) {",
+      "  HPEN pen = CreatePen(PS_SOLID, lineWidth, colorFromString(stroke));",
+      "  HBRUSH brush = colorFromString(fill) == CLR_INVALID ? (HBRUSH)GetStockObject(NULL_BRUSH) : CreateSolidBrush(colorFromString(fill));",
+      "  HPEN oldPen = (HPEN)SelectObject(hdc, pen);",
+      "  HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, brush);",
+      "  Ellipse(hdc, x - radius, y - radius, x + radius, y + radius);",
+      "  SelectObject(hdc, oldBrush);",
+      "  SelectObject(hdc, oldPen);",
+      "  if (colorFromString(fill) != CLR_INVALID) DeleteObject(brush);",
+      "  DeleteObject(pen);",
+      "}",
+      "",
+      "static void drawTextLine(HDC hdc, int x, int y, const wchar_t *text, int size, const wchar_t *color) {",
+      "  HFONT font = CreateFontW(size, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, L\"Arial\");",
+      "  HFONT oldFont = (HFONT)SelectObject(hdc, font);",
+      "  SetBkMode(hdc, TRANSPARENT);",
+      "  SetTextColor(hdc, colorFromString(color));",
+      "  TextOutW(hdc, x, y, text, (int)wcslen(text));",
+      "  SelectObject(hdc, oldFont);",
+      "  DeleteObject(font);",
+      "}",
+      "",
+      "LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {",
+      "  switch (msg) {",
+      "    case WM_PAINT: {",
+      "      PAINTSTRUCT ps;",
+      "      HDC hdc = BeginPaint(hwnd, &ps);",
+      `      HBRUSH bg = CreateSolidBrush(colorFromString(L${cString(this.background)}));`,
+      "      FillRect(hdc, &ps.rcPaint, bg);",
+      "      DeleteObject(bg);",
+      ...this.drawLines.map((line) => `      ${line}`),
+      "      EndPaint(hwnd, &ps);",
+      "      return 0;",
+      "    }",
+      "    case WM_DESTROY:",
+      "      PostQuitMessage(0);",
+      "      return 0;",
+      "  }",
+      "  return DefWindowProc(hwnd, msg, wParam, lParam);",
+      "}",
+      "",
+      "int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {",
+      "  const wchar_t CLASS_NAME[] = L\"MuyecodeWindow\";",
+      "  WNDCLASSW wc = {0};",
+      "  wc.lpfnWndProc = WindowProc;",
+      "  wc.hInstance = hInstance;",
+      "  wc.lpszClassName = CLASS_NAME;",
+      "  wc.hCursor = LoadCursor(NULL, IDC_ARROW);",
+      "  RegisterClassW(&wc);",
+      `  HWND hwnd = CreateWindowExW(0, CLASS_NAME, L\"Muyecode\", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, ${width}, ${height}, NULL, NULL, hInstance, NULL);`,
+      "  if (!hwnd) return 0;",
+      "  ShowWindow(hwnd, nCmdShow);",
+      "  MSG msg = {0};",
+      "  while (GetMessage(&msg, NULL, 0, 0)) {",
+      "    TranslateMessage(&msg);",
+      "    DispatchMessage(&msg);",
+      "  }",
+      "  return 0;",
+      "}",
+      ""
+    ].join("\n");
+  }
+}
+
 function compileValue(line, lineNumber, keyword) {
   const body = line.slice("value ".length).trim();
   const declarations = splitTopLevel(body, ",").map((part) => part.trim()).filter(Boolean);
@@ -1010,6 +1240,11 @@ function toPythonExpression(value) {
 function objcString(value) {
   const text = stripQuotes(value).replace(/\\/g, "\\\\").replace(/"/g, "\\\"");
   return `@"${text}"`;
+}
+
+function cString(value) {
+  const text = stripQuotes(value).replace(/\\/g, "\\\\").replace(/"/g, "\\\"");
+  return `"${text}"`;
 }
 
 if (require.main === module) {
