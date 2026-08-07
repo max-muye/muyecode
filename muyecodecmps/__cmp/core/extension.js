@@ -254,6 +254,9 @@ function activate(context) {
   const compileRunCommand = vscode.commands.registerCommand("muyecode.compileRun", () => {
     runCompiler(true);
   });
+  const smartEnterCommand = vscode.commands.registerCommand("muyecode.smartEnter", () => {
+    smartEnter();
+  });
 
   const changeSubscription = vscode.workspace.onDidChangeTextDocument((event) => {
     if (event.document.languageId === "muyecode") {
@@ -273,7 +276,50 @@ function activate(context) {
     updateDiagnostics(vscode.window.activeTextEditor.document, diagnostics);
   }
 
-  context.subscriptions.push(provider, diagnostics, compileCommand, runCommand, compileRunCommand, changeSubscription, openSubscription, closeSubscription);
+  context.subscriptions.push(provider, diagnostics, compileCommand, runCommand, compileRunCommand, smartEnterCommand, changeSubscription, openSubscription, closeSubscription);
+}
+
+function smartEnter() {
+  const editor = vscode.window.activeTextEditor;
+
+  if (!editor || editor.document.languageId !== "muyecode") {
+    vscode.commands.executeCommand("type", { text: "\n" });
+    return;
+  }
+
+  const position = editor.selection.active;
+  const line = editor.document.lineAt(position.line).text;
+  const beforeCursor = line.slice(0, position.character);
+
+  if (!isBlockStarter(beforeCursor)) {
+    vscode.commands.executeCommand("type", { text: "\n" });
+    return;
+  }
+
+  const baseIndent = beforeCursor.match(/^\s*/)[0];
+  const indentUnit = getIndentUnit(editor);
+  const insertText = `\n${baseIndent}${indentUnit}\n${baseIndent}end`;
+  const cursor = new vscode.Position(position.line + 1, baseIndent.length + indentUnit.length);
+
+  editor.edit((edit) => {
+    edit.insert(position, insertText);
+  }).then(() => {
+    editor.selection = new vscode.Selection(cursor, cursor);
+  });
+}
+
+function isBlockStarter(text) {
+  return /^\s*(?:class\s+[A-Za-z_][A-Za-z0-9_]*|method\s+[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*\)|function\s+[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*\)|if\s+.+|while\s+.+|game\s+.+)\s*$/.test(text);
+}
+
+function getIndentUnit(editor) {
+  const options = editor.options;
+
+  if (options.insertSpaces) {
+    return " ".repeat(Number(options.tabSize) || 4);
+  }
+
+  return "\t";
 }
 
 function updateDiagnostics(document, diagnostics) {

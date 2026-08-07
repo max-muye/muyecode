@@ -8,6 +8,7 @@ It includes:
 - file icon support
 - editor buttons for compile, run, and compile+run
 - auto indentation for blocks
+- automatic `end` insertion after block lines
 - error checking in VS Code Problems
 - a compiler command: `./muyecodecmp`
 - classes and simpler aliases like `let`, `say`, and `change`

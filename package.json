@@ -92,6 +92,14 @@
           "when": "resourceLangId == muyecode"
         }
       ]
-    }
+    },
+    "keybindings": [
+      {
+        "command": "muyecode.smartEnter",
+        "key": "enter",
+        "mac": "enter",
+        "when": "editorTextFocus && editorLangId == muyecode"
+      }
+    ]
   }
 }

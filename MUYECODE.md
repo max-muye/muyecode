@@ -49,6 +49,7 @@ In VS Code, Muyecode files also show buttons in the editor title:
 - Compile and Run
 
 VS Code also auto-indents after block lines like `class`, `method`, `function`, `if`, and `while`.
+When you press Enter after a block line, VS Code inserts `end` automatically.
 Compiler errors appear in the Problems panel while editing.
 
 Compile any Muyecode file:
