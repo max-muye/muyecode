@@ -16,8 +16,8 @@ It includes:
 Clone the repository:
 
 ```sh
-git clone <your-repo-url>
-cd <your-repo-folder>
+git clone https://github.com/max-muye/muyecode.git
+cd muyecode
 ```
 
 Open the folder in VS Code:
@@ -30,11 +30,11 @@ Press `F5` to start an Extension Development Host window. Open a `.muyecode` fil
 
 ## Install Locally In VS Code
 
-For normal VS Code use, copy this project folder into your VS Code extensions folder:
+For normal VS Code use, install it directly into your VS Code extensions folder:
 
 ```sh
-mkdir -p ~/.vscode/extensions/muyecode-language-local
-cp -R . ~/.vscode/extensions/muyecode-language-local
+git clone https://github.com/max-muye/muyecode.git ~/.vscode/extensions/muyecode-language-local
+chmod +x ~/.vscode/extensions/muyecode-language-local/muyecodecmp
 ```
 
 Then run:
@@ -44,6 +44,13 @@ Developer: Reload Window
 ```
 
 After reload, `.muyecode` files should use the Muyecode language mode.
+
+To update later:
+
+```sh
+cd ~/.vscode/extensions/muyecode-language-local
+git pull
+```
 
 ## Create A Program
 
