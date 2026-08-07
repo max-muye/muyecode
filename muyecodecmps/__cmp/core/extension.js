@@ -8,9 +8,21 @@ const builtinCompletions = [
     detail: "Create a value"
   },
   {
+    label: "let",
+    kind: vscode.CompletionItemKind.Keyword,
+    insertText: "let ${1:name} = ${2:value}",
+    detail: "Create a value"
+  },
+  {
     label: "set",
     kind: vscode.CompletionItemKind.Keyword,
     insertText: "set ${1:name} = ${2:value}",
+    detail: "Change a value"
+  },
+  {
+    label: "change",
+    kind: vscode.CompletionItemKind.Keyword,
+    insertText: "change ${1:name} = ${2:value}",
     detail: "Change a value"
   },
   {
@@ -18,6 +30,24 @@ const builtinCompletions = [
     kind: vscode.CompletionItemKind.Keyword,
     insertText: "function ${1:name}(${2:args})\n\t$0\nend",
     detail: "Create a function"
+  },
+  {
+    label: "class",
+    kind: vscode.CompletionItemKind.Class,
+    insertText: "class ${1:Name}\n\tmethod init(${2:args})\n\t\t$0\n\tend\nend",
+    detail: "Create a class"
+  },
+  {
+    label: "method",
+    kind: vscode.CompletionItemKind.Method,
+    insertText: "method ${1:name}(${2:args})\n\t$0\nend",
+    detail: "Create a class method"
+  },
+  {
+    label: "new",
+    kind: vscode.CompletionItemKind.Keyword,
+    insertText: "new ${1:Name}(${2:args})",
+    detail: "Create an object"
   },
   {
     label: "if",
@@ -47,6 +77,12 @@ const builtinCompletions = [
     label: "print",
     kind: vscode.CompletionItemKind.Function,
     insertText: "print ",
+    detail: "Print values"
+  },
+  {
+    label: "say",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "say ",
     detail: "Print values"
   },
   {

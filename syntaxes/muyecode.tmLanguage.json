@@ -75,15 +75,15 @@
       "patterns": [
         {
           "name": "keyword.control.muyecode",
-          "match": "\\b(?:if|else|while|for|return|end)\\b"
+          "match": "\\b(?:if|else|while|for|return|end|this|new)\\b"
         },
         {
           "name": "storage.type.muyecode",
-          "match": "\\b(?:value|set|function)\\b"
+          "match": "\\b(?:value|let|set|change|function|class|method)\\b"
         },
         {
           "name": "support.function.builtin.muyecode",
-          "match": "\\b(?:print|input|len|str|num|openfile|writefile|appendfile|canvas|pen|fill|line|rect|circle|text)\\b"
+          "match": "\\b(?:print|say|input|len|str|num|openfile|writefile|appendfile|canvas|pen|fill|line|rect|circle|text)\\b"
         },
         {
           "name": "constant.language.boolean.muyecode",
@@ -95,7 +95,7 @@
       "patterns": [
         {
           "name": "meta.value.declaration.muyecode",
-          "match": "\\b(value)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "match": "\\b(value|let)\\s+([A-Za-z_][A-Za-z0-9_]*)",
           "captures": {
             "1": {
               "name": "storage.type.muyecode"
@@ -107,7 +107,7 @@
         },
         {
           "name": "meta.set.statement.muyecode",
-          "match": "\\b(set)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "match": "\\b(set|change)\\s+([A-Za-z_][A-Za-z0-9_]*)",
           "captures": {
             "1": {
               "name": "storage.type.muyecode"
@@ -123,6 +123,39 @@
           "captures": {
             "1": {
               "name": "variable.other.readwrite.muyecode"
+            }
+          }
+        },
+        {
+          "name": "meta.class.declaration.muyecode",
+          "match": "\\b(class)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": {
+              "name": "storage.type.muyecode"
+            },
+            "2": {
+              "name": "entity.name.type.class.muyecode"
+            }
+          }
+        },
+        {
+          "name": "meta.method.declaration.muyecode",
+          "match": "\\b(method)\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*(\\()([^)]*)(\\))",
+          "captures": {
+            "1": {
+              "name": "storage.type.muyecode"
+            },
+            "2": {
+              "name": "entity.name.function.muyecode"
+            },
+            "3": {
+              "name": "punctuation.definition.parameters.begin.muyecode"
+            },
+            "4": {
+              "name": "variable.parameter.muyecode"
+            },
+            "5": {
+              "name": "punctuation.definition.parameters.end.muyecode"
             }
           }
         },
@@ -161,7 +194,7 @@
       "patterns": [
         {
           "name": "variable.other.readwrite.muyecode",
-          "match": "\\b(?!(?:value|set|function|if|else|while|for|return|end|print|input|len|str|num|openfile|writefile|appendfile|canvas|pen|fill|line|rect|circle|text|true|false|null)\\b)[A-Za-z_][A-Za-z0-9_]*\\b"
+          "match": "\\b(?!(?:value|let|set|change|function|class|method|if|else|while|for|return|end|this|new|print|say|input|len|str|num|openfile|writefile|appendfile|canvas|pen|fill|line|rect|circle|text|true|false|null)\\b)[A-Za-z_][A-Za-z0-9_]*\\b"
         }
       ]
     },

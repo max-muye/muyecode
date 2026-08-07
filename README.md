@@ -8,6 +8,7 @@ It includes:
 - file icon support
 - editor buttons for compile, run, and compile+run
 - a compiler command: `./muyecodecmp`
+- classes and simpler aliases like `let`, `say`, and `change`
 - JavaScript output
 - native macOS drawing executable output
 
@@ -57,8 +58,8 @@ git pull
 Create a file like `hello.muyecode`:
 
 ```muyecode
-value name = "Muyecode"
-print "Hello" name
+let name = "Muyecode"
+say "Hello" name
 ```
 
 Compile it:

@@ -178,6 +178,37 @@ value answer = add(2, 3)
 print answer
 ```
 
+## Classes
+
+Create classes with `class`. Use `method init(...)` for the constructor. Use `this.name` for object fields.
+
+```muyecode
+class Counter
+    method init(start)
+        this.n = start
+    end
+
+    method next()
+        this.n = this.n + 1
+        return this.n
+    end
+end
+
+let counter = new Counter(10)
+say counter.next()
+say counter.next()
+```
+
+`method init(...)` compiles to a JavaScript constructor.
+
+## Easier Words
+
+These pairs mean the same thing:
+
+- `value` and `let`
+- `set` and `change`
+- `print` and `say`
+
 ## Built In Functions
 
 Muyecode has a few built-in helper functions.

@@ -261,17 +261,17 @@ class Compiler {
       return;
     }
 
-    if (rawLine.startsWith("value ")) {
+    if (rawLine.startsWith("value ") || rawLine.startsWith("let ")) {
       this.pushLines(compileValue(rawLine, lineNumber, "let"));
       return;
     }
 
-    if (rawLine.startsWith("set ")) {
+    if (rawLine.startsWith("set ") || rawLine.startsWith("change ")) {
       this.pushLine(compileSet(rawLine, lineNumber));
       return;
     }
 
-    if (rawLine.startsWith("print ")) {
+    if (rawLine.startsWith("print ") || rawLine.startsWith("say ")) {
       this.pushLine(compilePrint(rawLine));
       return;
     }
@@ -301,8 +301,23 @@ class Compiler {
       return;
     }
 
+    if (rawLine.startsWith("class ")) {
+      this.compileClass(rawLine, lineNumber);
+      return;
+    }
+
+    if (rawLine.startsWith("method ")) {
+      this.compileMethod(rawLine, lineNumber);
+      return;
+    }
+
     if (rawLine.startsWith("return")) {
       this.pushLine(compileReturn(rawLine));
+      return;
+    }
+
+    if (/^(?:this|[A-Za-z_][A-Za-z0-9_]*)(?:\.[A-Za-z_][A-Za-z0-9_]*)+\s*=/.test(rawLine)) {
+      this.pushLine(`${rawLine};`);
       return;
     }
 
@@ -348,6 +363,32 @@ class Compiler {
 
     this.pushLine(`function ${match[1]}(${match[2]}) {`);
     this.blockStack.push("function");
+    this.indent += 1;
+  }
+
+  compileClass(line, lineNumber) {
+    const name = line.slice("class ".length).trim();
+
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
+      throw new Error(`Line ${lineNumber}: expected class Name`);
+    }
+
+    this.pushLine(`class ${name} {`);
+    this.blockStack.push("class");
+    this.indent += 1;
+  }
+
+  compileMethod(line, lineNumber) {
+    const body = line.slice("method ".length).trim();
+    const match = body.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*\((.*)\)$/);
+
+    if (!match) {
+      throw new Error(`Line ${lineNumber}: expected method name(arg1, arg2)`);
+    }
+
+    const name = match[1] === "init" ? "constructor" : match[1];
+    this.pushLine(`${name}(${match[2]}) {`);
+    this.blockStack.push("method");
     this.indent += 1;
   }
 
@@ -798,7 +839,7 @@ class CocoaCompiler {
 
 
 function compileValue(line, lineNumber, keyword) {
-  const body = line.slice("value ".length).trim();
+  const body = line.replace(/^(value|let)\s+/, "").trim();
   const declarations = splitTopLevel(body, ",").map((part) => part.trim()).filter(Boolean);
 
   if (declarations.length === 0) {
@@ -817,7 +858,7 @@ function compileValue(line, lineNumber, keyword) {
 }
 
 function compileSet(line, lineNumber) {
-  const body = line.slice("set ".length).trim();
+  const body = line.replace(/^(set|change)\s+/, "").trim();
   const match = body.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+)$/);
 
   if (!match) {
@@ -828,7 +869,7 @@ function compileSet(line, lineNumber) {
 }
 
 function compilePrint(line) {
-  const body = line.slice("print ".length).trim();
+  const body = line.replace(/^(print|say)\s+/, "").trim();
   const args = splitPrintArgs(body);
   return `console.log([${args.join(", ")}].map(str).join(" "));`;
 }
