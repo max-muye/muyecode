@@ -35,7 +35,7 @@ const builtinCompletions = [
   {
     label: "class",
     kind: vscode.CompletionItemKind.Class,
-    insertText: "class ${1:Name}\n\tmethod init(${2:args})\n\t\t$0\n\tend\nend",
+    insertText: "class ${1:Name}\n\t$0\nend",
     detail: "Create a class"
   },
   {

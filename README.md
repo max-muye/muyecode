@@ -118,10 +118,8 @@ For movement or animation, make your own class and use `while true` with `wait`.
 canvas 400 400 "black"
 
 class SnakeGame
-    method init()
-        this.x = 200
-        this.y = 200
-    end
+    value x = 200
+    value y = 200
 
     method run()
         while true

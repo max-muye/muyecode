@@ -184,13 +184,11 @@ print answer
 
 ## Classes
 
-Create classes with `class`. Use `method init(...)` for the constructor. Use `this.name` for object fields.
+Create classes with `class`. Put values directly inside the class, and close the class with `end`.
 
 ```muyecode
 class Counter
-    method init(start)
-        this.n = start
-    end
+    value n = 10
 
     method next()
         this.n = this.n + 1
@@ -198,12 +196,12 @@ class Counter
     end
 end
 
-let counter = new Counter(10)
+let counter = new Counter()
 say counter.next()
 say counter.next()
 ```
 
-`method init(...)` compiles to a JavaScript constructor.
+Use `this.name` inside methods to read or change class values.
 
 ## Easier Words
 
@@ -332,10 +330,8 @@ Example:
 ```muyecode
 canvas 400 400 "black"
 class SnakeGame
-    method init()
-        this.x = 200
-        this.y = 200
-    end
+    value x = 200
+    value y = 200
 
     method run()
         while true

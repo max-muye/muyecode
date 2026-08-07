@@ -146,7 +146,12 @@ function compile(source) {
 }
 
 function check(source) {
-  compile(source);
+  if (needsHtmlOutput(source)) {
+    compileHtml(source);
+  } else {
+    compile(source);
+  }
+
   return [];
 }
 
@@ -273,7 +278,7 @@ class Compiler {
     }
 
     if (rawLine.startsWith("value ") || rawLine.startsWith("let ")) {
-      this.pushLines(compileValue(rawLine, lineNumber, "let"));
+      this.pushLines(this.isDirectlyInClass() ? compileClassValue(rawLine, lineNumber) : compileValue(rawLine, lineNumber, "let"));
       return;
     }
 
@@ -372,7 +377,7 @@ class Compiler {
       throw new Error(`Line ${lineNumber}: expected function name(arg1, arg2)`);
     }
 
-    this.pushLine(`function ${match[1]}(${match[2]}) {`);
+    this.pushLine(`async function ${match[1]}(${match[2]}) {`);
     this.blockStack.push({ type: "function", lineNumber });
     this.indent += 1;
   }
@@ -411,6 +416,10 @@ class Compiler {
     this.blockStack.pop();
     this.indent -= 1;
     this.pushLine("}");
+  }
+
+  isDirectlyInClass() {
+    return this.blockStack[this.blockStack.length - 1]?.type === "class";
   }
 
   finish() {
@@ -469,7 +478,7 @@ class HtmlCompiler {
     }
 
     if (rawLine.startsWith("value ") || rawLine.startsWith("let ")) {
-      this.pushLines(compileValue(rawLine, lineNumber, "let"));
+      this.pushLines(this.isDirectlyInClass() ? compileClassValue(rawLine, lineNumber) : compileValue(rawLine, lineNumber, "let"));
       return;
     }
 
@@ -598,7 +607,7 @@ class HtmlCompiler {
       throw new Error(`Line ${lineNumber}: expected method name(arg1, arg2)`);
     }
 
-    const name = match[1] === "init" ? "constructor" : match[1] === "run" ? "async run" : match[1];
+    const name = match[1] === "init" ? "constructor" : `async ${match[1]}`;
     this.pushLine(`${name}(${match[2]}) {`);
     this.blockStack.push("method");
     this.indent += 1;
@@ -612,6 +621,10 @@ class HtmlCompiler {
     this.blockStack.pop();
     this.indent -= 1;
     this.pushLine("}");
+  }
+
+  isDirectlyInClass() {
+    return this.blockStack[this.blockStack.length - 1] === "class";
   }
 
   finish() {
@@ -928,6 +941,25 @@ function compileValue(line, lineNumber, keyword) {
     }
 
     return `${keyword} ${match[1]} = ${match[2]};`;
+  }).join("\n");
+}
+
+function compileClassValue(line, lineNumber) {
+  const body = line.replace(/^(value|let)\s+/, "").trim();
+  const declarations = splitTopLevel(body, ",").map((part) => part.trim()).filter(Boolean);
+
+  if (declarations.length === 0) {
+    throw new Error(`Line ${lineNumber}: expected a class value declaration`);
+  }
+
+  return declarations.map((declaration) => {
+    const match = declaration.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+)$/);
+
+    if (!match) {
+      throw new Error(`Line ${lineNumber}: invalid class value declaration "${declaration}"`);
+    }
+
+    return `${match[1]} = ${match[2]};`;
   }).join("\n");
 }
 
