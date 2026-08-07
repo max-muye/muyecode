@@ -333,7 +333,7 @@ class Compiler {
     }
 
     if (/^(?:this|[A-Za-z_][A-Za-z0-9_]*)(?:\.[A-Za-z_][A-Za-z0-9_]*)+\s*=/.test(rawLine)) {
-      this.pushLine(`${rawLine};`);
+      this.pushLine(this.isDirectlyInClass() ? compileDirectClassField(rawLine, lineNumber) : `${rawLine};`);
       return;
     }
 
@@ -377,7 +377,7 @@ class Compiler {
       throw new Error(`Line ${lineNumber}: expected function name(arg1, arg2)`);
     }
 
-    this.pushLine(`async function ${match[1]}(${match[2]}) {`);
+    this.pushLine(`function ${match[1]}(${match[2]}) {`);
     this.blockStack.push({ type: "function", lineNumber });
     this.indent += 1;
   }
@@ -528,7 +528,7 @@ class HtmlCompiler {
     }
 
     if (/^(?:this|[A-Za-z_][A-Za-z0-9_]*)(?:\.[A-Za-z_][A-Za-z0-9_]*)+\s*=/.test(rawLine)) {
-      this.pushLine(`${rawLine};`);
+      this.pushLine(this.isDirectlyInClass() ? compileDirectClassField(rawLine, lineNumber) : `${rawLine};`);
       return;
     }
 
@@ -607,7 +607,7 @@ class HtmlCompiler {
       throw new Error(`Line ${lineNumber}: expected method name(arg1, arg2)`);
     }
 
-    const name = match[1] === "init" ? "constructor" : `async ${match[1]}`;
+    const name = match[1] === "init" ? "constructor" : match[1] === "run" ? "async run" : match[1];
     this.pushLine(`${name}(${match[2]}) {`);
     this.blockStack.push("method");
     this.indent += 1;
@@ -961,6 +961,16 @@ function compileClassValue(line, lineNumber) {
 
     return `${match[1]} = ${match[2]};`;
   }).join("\n");
+}
+
+function compileDirectClassField(line, lineNumber) {
+  const match = line.match(/^this\.([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+)$/);
+
+  if (!match) {
+    throw new Error(`Line ${lineNumber}: use value name = value inside a class`);
+  }
+
+  return `${match[1]} = ${match[2]};`;
 }
 
 function compileSet(line, lineNumber) {
