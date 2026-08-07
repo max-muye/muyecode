@@ -1,0 +1,97 @@
+{
+  "name": "muyecode-language",
+  "displayName": "Muyecode Language",
+  "description": "VS Code language support for .muyecode files.",
+  "version": "0.0.1",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:muyecode"
+  ],
+  "main": "./extension.js",
+  "bin": {
+    "muyecodec": "./muyecodecmps/__cmp/core/muyecodec.js",
+    "muyecodecmp": "./muyecodecmp"
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "muyecode",
+        "aliases": [
+          "Muyecode",
+          "muyecode"
+        ],
+        "extensions": [
+          ".muyecode"
+        ],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./icons/muyecode.svg",
+          "dark": "./icons/muyecode.svg"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "muyecode",
+        "scopeName": "source.muyecode",
+        "path": "./syntaxes/muyecode.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "muyecode.compile",
+        "title": "Muyecode: Compile",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "muyecode.run",
+        "title": "Muyecode: Run",
+        "icon": "$(play)"
+      },
+      {
+        "command": "muyecode.compileRun",
+        "title": "Muyecode: Compile and Run",
+        "icon": "$(debug-start)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "muyecode.compile",
+          "when": "resourceLangId == muyecode",
+          "group": "navigation@1"
+        },
+        {
+          "command": "muyecode.run",
+          "when": "resourceLangId == muyecode",
+          "group": "navigation@2"
+        },
+        {
+          "command": "muyecode.compileRun",
+          "when": "resourceLangId == muyecode",
+          "group": "navigation@3"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "muyecode.compile",
+          "when": "resourceLangId == muyecode"
+        },
+        {
+          "command": "muyecode.run",
+          "when": "resourceLangId == muyecode"
+        },
+        {
+          "command": "muyecode.compileRun",
+          "when": "resourceLangId == muyecode"
+        }
+      ]
+    }
+  }
+}

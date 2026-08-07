@@ -1,0 +1,48 @@
+{
+  "files.associations": {
+    "*.muyecode": "muyecode"
+  },
+  "editor.tokenColorCustomizations": {
+    "textMateRules": [
+      {
+        "scope": "variable.other.assignment.muyecode",
+        "settings": {
+          "foreground": "#D2A8FF",
+          "fontStyle": "bold"
+        }
+      },
+      {
+        "scope": "variable.other.readwrite.muyecode",
+        "settings": {
+          "foreground": "#D2A8FF"
+        }
+      },
+      {
+        "scope": "variable.parameter.muyecode",
+        "settings": {
+          "foreground": "#FFA657",
+          "fontStyle": "italic"
+        }
+      },
+      {
+        "scope": "entity.name.function.muyecode",
+        "settings": {
+          "foreground": "#FFD166",
+          "fontStyle": "bold"
+        }
+      },
+      {
+        "scope": "support.function.call.muyecode",
+        "settings": {
+          "foreground": "#A5D6FF"
+        }
+      },
+      {
+        "scope": "keyword.operator.muyecode, keyword.operator.assignment.muyecode, keyword.operator.arithmetic.muyecode, keyword.operator.comparison.muyecode",
+        "settings": {
+          "foreground": "#FFB86C"
+        }
+      }
+    ]
+  }
+}

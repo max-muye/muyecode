@@ -1,0 +1,185 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Muyecode",
+  "scopeName": "source.muyecode",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#declarations"
+    },
+    {
+      "include": "#functionCalls"
+    },
+    {
+      "include": "#variables"
+    },
+    {
+      "include": "#operators"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.number-sign.muyecode",
+          "match": "#.*$"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.muyecode",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.muyecode",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.muyecode",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "name": "constant.character.escape.muyecode",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.muyecode",
+          "match": "\\b-?(?:\\d+\\.\\d+|\\d+|\\.\\d+)\\b"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.muyecode",
+          "match": "\\b(?:if|else|while|for|return|end)\\b"
+        },
+        {
+          "name": "storage.type.muyecode",
+          "match": "\\b(?:value|set|function)\\b"
+        },
+        {
+          "name": "support.function.builtin.muyecode",
+          "match": "\\b(?:print|input|len|str|num|openfile|writefile|appendfile|canvas|pen|fill|line|rect|circle|text)\\b"
+        },
+        {
+          "name": "constant.language.boolean.muyecode",
+          "match": "\\b(?:true|false|null)\\b"
+        }
+      ]
+    },
+    "declarations": {
+      "patterns": [
+        {
+          "name": "meta.value.declaration.muyecode",
+          "match": "\\b(value)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": {
+              "name": "storage.type.muyecode"
+            },
+            "2": {
+              "name": "variable.other.assignment.muyecode"
+            }
+          }
+        },
+        {
+          "name": "meta.set.statement.muyecode",
+          "match": "\\b(set)\\s+([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": {
+              "name": "storage.type.muyecode"
+            },
+            "2": {
+              "name": "variable.other.readwrite.muyecode"
+            }
+          }
+        },
+        {
+          "name": "variable.other.readwrite.muyecode",
+          "match": "(?<=,)\\s*([A-Za-z_][A-Za-z0-9_]*)(?=\\s*=)",
+          "captures": {
+            "1": {
+              "name": "variable.other.readwrite.muyecode"
+            }
+          }
+        },
+        {
+          "name": "meta.function.declaration.muyecode",
+          "match": "\\b(function)\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*(\\()([^)]*)(\\))",
+          "captures": {
+            "1": {
+              "name": "storage.type.muyecode"
+            },
+            "2": {
+              "name": "entity.name.function.muyecode"
+            },
+            "3": {
+              "name": "punctuation.definition.parameters.begin.muyecode"
+            },
+            "4": {
+              "name": "variable.parameter.muyecode"
+            },
+            "5": {
+              "name": "punctuation.definition.parameters.end.muyecode"
+            }
+          }
+        }
+      ]
+    },
+    "functionCalls": {
+      "patterns": [
+        {
+          "name": "support.function.call.muyecode",
+          "match": "\\b([A-Za-z_][A-Za-z0-9_]*)(?=\\s*\\()"
+        }
+      ]
+    },
+    "variables": {
+      "patterns": [
+        {
+          "name": "variable.other.readwrite.muyecode",
+          "match": "\\b(?!(?:value|set|function|if|else|while|for|return|end|print|input|len|str|num|openfile|writefile|appendfile|canvas|pen|fill|line|rect|circle|text|true|false|null)\\b)[A-Za-z_][A-Za-z0-9_]*\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.comparison.muyecode",
+          "match": "==|!=|<=|>=|<|>"
+        },
+        {
+          "name": "keyword.operator.assignment.muyecode",
+          "match": "="
+        },
+        {
+          "name": "keyword.operator.arithmetic.muyecode",
+          "match": "\\+|-|\\*|/"
+        }
+      ]
+    }
+  }
+}

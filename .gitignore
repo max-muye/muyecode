@@ -1,0 +1,19 @@
+# Personal Muyecode programs and local test files
+*.muyecode
+mcmp
+
+# Compiler outputs
+muyecodecmps/*
+!muyecodecmps/
+!muyecodecmps/__cmp/
+!muyecodecmps/__cmp/core/
+!muyecodecmps/__cmp/core/**
+
+# Generated native/browser/script outputs
+*.html
+*_exec
+*.m
+
+# OS/editor noise
+.DS_Store
+*.log

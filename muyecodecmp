@@ -1,0 +1,3 @@
+#!/usr/bin/env node
+
+require("./muyecodecmps/__cmp/core/muyecodec.js").main();
