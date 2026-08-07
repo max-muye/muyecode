@@ -69,6 +69,12 @@ const builtinCompletions = [
     detail: "Create a while loop"
   },
   {
+    label: "while true",
+    kind: vscode.CompletionItemKind.Snippet,
+    insertText: "while true\n\t$0\nend",
+    detail: "Create a repeating loop"
+  },
+  {
     label: "return",
     kind: vscode.CompletionItemKind.Keyword,
     insertText: "return ${1:value}",
@@ -201,12 +207,6 @@ const builtinCompletions = [
     detail: "Pause in HTML canvas mode"
   },
   {
-    label: "game",
-    kind: vscode.CompletionItemKind.Snippet,
-    insertText: "game ${1:100}\n\t$0\nend",
-    detail: "Create a repeating game loop"
-  },
-  {
     label: "key",
     kind: vscode.CompletionItemKind.Function,
     insertText: "key(${1:\"ArrowUp\"})",
@@ -336,7 +336,7 @@ async function maybeInsertEnd(event) {
 }
 
 function isBlockStarter(text) {
-  return /^\s*(?:class\s+[A-Za-z_][A-Za-z0-9_]*|method\s+[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*\)|function\s+[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*\)|if\s+.+|while\s+.+|game\s+.+)\s*$/.test(text);
+  return /^\s*(?:class\s+[A-Za-z_][A-Za-z0-9_]*|method\s+[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*\)|function\s+[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*\)|if\s+.+|while\s+.+)\s*$/.test(text);
 }
 
 function getIndentUnit(editor) {
@@ -395,10 +395,9 @@ function runCompiledOutput() {
   }
 
   const filePath = editor.document.fileName;
-  const outputPath = getDefaultOutputPath(filePath);
   const terminal = getTerminal();
   terminal.show();
-  terminal.sendText(`cd ${quoteShell(getWorkspaceFolder(filePath))} && node ${quoteShell(outputPath)}`);
+  terminal.sendText(`cd ${quoteShell(getWorkspaceFolder(filePath))} && ./muyecodecmp ${quoteShell(filePath)} -o run`);
 }
 
 function getTerminal() {
@@ -409,12 +408,6 @@ function getTerminal() {
 function getWorkspaceFolder(filePath) {
   const folder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
   return folder ? folder.uri.fsPath : require("path").dirname(filePath);
-}
-
-function getDefaultOutputPath(filePath) {
-  const path = require("path");
-  const name = path.basename(filePath, path.extname(filePath));
-  return path.join(getWorkspaceFolder(filePath), "muyecodecmps", `${name}.js`);
 }
 
 function quoteShell(value) {

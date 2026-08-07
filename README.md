@@ -13,7 +13,7 @@ It includes:
 - a compiler command: `./muyecodecmp`
 - classes and simpler aliases like `let`, `say`, and `change`
 - JavaScript output
-- browser canvas game output
+- canvas window output for programs that use `canvas`, `wait`, or `key(...)`
 - native macOS drawing executable output
 
 ## Get It
@@ -110,17 +110,42 @@ Build a real macOS executable:
 ./drawing_muyecode_exec
 ```
 
-## Browser Game
+## Canvas Loop
 
-Muyecode can make browser canvas games.
+For movement or animation, make your own class and use `while true` with `wait`.
+
+```muyecode
+canvas 400 400 "black"
+
+class SnakeGame
+    method init()
+        this.x = 200
+        this.y = 200
+    end
+
+    method run()
+        while true
+            if key("ArrowRight")
+                change this.x = this.x + 20
+            end
+
+            clear "black"
+            fill "#22c55e"
+            box this.x this.y 20
+            wait 100
+        end
+    end
+end
+
+let game = new SnakeGame()
+game.run()
+```
 
 ```sh
 ./muyecodecmp snake.muyecode -o run
 ```
 
-Game helpers include `game`, `wait`, `key`, `random`, `clear`, and `box`.
-Game files automatically compile to `.html` when no output filename is provided.
-
+Files that use `canvas`, `wait`, `sleep`, or `key(...)` automatically open as a canvas window when no output filename is provided.
 
 ## Notes
 

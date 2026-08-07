@@ -315,14 +315,13 @@ Drawing commands:
 - `circle x y radius`
 - `text x y message size`
 
-## Games
+## Canvas Loops
 
-For browser canvas games, compile to `.html`.
+For animation, make your own class and write the loop yourself with `while true`.
 
-Useful game commands:
+Useful commands:
 
-- `game ms` starts a repeating loop and waits `ms` milliseconds each frame
-- `wait ms` pauses inside browser canvas mode
+- `wait ms` pauses inside canvas mode
 - `key("ArrowUp")` checks if a key is pressed
 - `random(max)` returns a random integer from `0` to `max - 1`
 - `clear color` clears the whole canvas
@@ -332,18 +331,28 @@ Example:
 
 ```muyecode
 canvas 400 400 "black"
-let x = 200
-let y = 200
-
-game 100
-    if key("ArrowRight")
-        change x = x + 20
+class SnakeGame
+    method init()
+        this.x = 200
+        this.y = 200
     end
 
-    clear "black"
-    fill "#22c55e"
-    box x y 20
+    method run()
+        while true
+            if key("ArrowRight")
+                change this.x = this.x + 20
+            end
+
+            clear "black"
+            fill "#22c55e"
+            box this.x this.y 20
+            wait 100
+        end
+    end
 end
+
+let game = new SnakeGame()
+game.run()
 ```
 
 Run the snake example:
@@ -352,7 +361,7 @@ Run the snake example:
 ./muyecodecmp snake.muyecode -o run
 ```
 
-Files that use `game`, `wait`, `sleep`, or `key(...)` automatically compile to `.html` when no output filename is provided.
+Files that use `canvas`, `wait`, `sleep`, or `key(...)` automatically compile to a canvas window when no output filename is provided.
 
 ## Complete Example
 

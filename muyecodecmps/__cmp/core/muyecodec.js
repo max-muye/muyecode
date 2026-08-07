@@ -69,7 +69,7 @@ function resolveOutputPath(options, source = "") {
 }
 
 function needsHtmlOutput(source) {
-  return /(^|\n)\s*(?:game|wait|sleep)\b/.test(source) || /\bkey\s*\(/.test(source);
+  return /(^|\n)\s*(?:canvas|wait|sleep)\b/.test(source) || /\bkey\s*\(/.test(source);
 }
 
 function getDefaultExecutablePath(outputDir, sourceName) {
@@ -488,11 +488,6 @@ class HtmlCompiler {
       return;
     }
 
-    if (rawLine.startsWith("game ")) {
-      this.compileGame(rawLine);
-      return;
-    }
-
     if (rawLine.startsWith("if ")) {
       this.compileIf(rawLine);
       return;
@@ -508,6 +503,16 @@ class HtmlCompiler {
       return;
     }
 
+    if (rawLine.startsWith("class ")) {
+      this.compileClass(rawLine, lineNumber);
+      return;
+    }
+
+    if (rawLine.startsWith("method ")) {
+      this.compileMethod(rawLine, lineNumber);
+      return;
+    }
+
     if (rawLine.startsWith("return")) {
       this.pushLine(compileReturn(rawLine));
       return;
@@ -518,7 +523,7 @@ class HtmlCompiler {
       return;
     }
 
-    if (/^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+\s*\(.*\)$/.test(rawLine)) {
+    if (/^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*\s*\(.*\)$/.test(rawLine)) {
       this.pushLine(`${rawLine};`);
       return;
     }
@@ -573,12 +578,30 @@ class HtmlCompiler {
     this.indent += 1;
   }
 
-  compileGame(line) {
-    const ms = line.slice("game ".length).trim();
-    this.pushLine(`while (true) {`);
-    this.blockStack.push("game");
+  compileClass(line, lineNumber) {
+    const name = line.slice("class ".length).trim();
+
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
+      throw new Error(`Line ${lineNumber}: expected class Name`);
+    }
+
+    this.pushLine(`class ${name} {`);
+    this.blockStack.push("class");
     this.indent += 1;
-    this.pushLine(`await sleep(${ms});`);
+  }
+
+  compileMethod(line, lineNumber) {
+    const body = line.slice("method ".length).trim();
+    const match = body.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*\((.*)\)$/);
+
+    if (!match) {
+      throw new Error(`Line ${lineNumber}: expected method name(arg1, arg2)`);
+    }
+
+    const name = match[1] === "init" ? "constructor" : match[1] === "run" ? "async run" : match[1];
+    this.pushLine(`${name}(${match[2]}) {`);
+    this.blockStack.push("method");
+    this.indent += 1;
   }
 
   compileEnd(lineNumber) {
@@ -910,7 +933,7 @@ function compileValue(line, lineNumber, keyword) {
 
 function compileSet(line, lineNumber) {
   const body = line.replace(/^(set|change)\s+/, "").trim();
-  const match = body.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.+)$/);
+  const match = body.match(/^((?:this|[A-Za-z_][A-Za-z0-9_]*)(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\s*=\s*(.+)$/);
 
   if (!match) {
     throw new Error(`Line ${lineNumber}: expected set name = value`);
