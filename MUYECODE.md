@@ -48,6 +48,9 @@ In VS Code, Muyecode files also show buttons in the editor title:
 - Run
 - Compile and Run
 
+VS Code also auto-indents after block lines like `class`, `method`, `function`, `if`, and `while`.
+Compiler errors appear in the Problems panel while editing.
+
 Compile any Muyecode file:
 
 ```sh

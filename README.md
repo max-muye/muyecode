@@ -7,6 +7,8 @@ It includes:
 - syntax highlighting and autocomplete
 - file icon support
 - editor buttons for compile, run, and compile+run
+- auto indentation for blocks
+- error checking in VS Code Problems
 - a compiler command: `./muyecodecmp`
 - classes and simpler aliases like `let`, `say`, and `change`
 - JavaScript output

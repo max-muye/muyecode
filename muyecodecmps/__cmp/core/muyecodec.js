@@ -141,6 +141,11 @@ function compile(source) {
   return compiler.finish();
 }
 
+function check(source) {
+  compile(source);
+  return [];
+}
+
 function compileHtml(source) {
   const lines = source.split(/\r?\n/);
   const compiler = new HtmlCompiler();
@@ -247,6 +252,8 @@ class Compiler {
   }
 
   compileLine(rawLine, lineNumber) {
+    this.currentLineNumber = lineNumber;
+
     if (!rawLine) {
       return;
     }
@@ -332,12 +339,12 @@ class Compiler {
   compileIf(line) {
     const condition = line.slice("if ".length).trim();
     this.pushLine(`if (${condition}) {`);
-    this.blockStack.push("if");
+    this.blockStack.push({ type: "if", lineNumber: this.currentLineNumber });
     this.indent += 1;
   }
 
   compileElse(lineNumber) {
-    if (this.blockStack[this.blockStack.length - 1] !== "if") {
+    if (this.blockStack[this.blockStack.length - 1]?.type !== "if") {
       throw new Error(`Line ${lineNumber}: else must belong to an if block`);
     }
 
@@ -349,7 +356,7 @@ class Compiler {
   compileWhile(line) {
     const condition = line.slice("while ".length).trim();
     this.pushLine(`while (${condition}) {`);
-    this.blockStack.push("while");
+    this.blockStack.push({ type: "while", lineNumber: this.currentLineNumber });
     this.indent += 1;
   }
 
@@ -362,7 +369,7 @@ class Compiler {
     }
 
     this.pushLine(`function ${match[1]}(${match[2]}) {`);
-    this.blockStack.push("function");
+    this.blockStack.push({ type: "function", lineNumber });
     this.indent += 1;
   }
 
@@ -374,7 +381,7 @@ class Compiler {
     }
 
     this.pushLine(`class ${name} {`);
-    this.blockStack.push("class");
+    this.blockStack.push({ type: "class", lineNumber });
     this.indent += 1;
   }
 
@@ -388,7 +395,7 @@ class Compiler {
 
     const name = match[1] === "init" ? "constructor" : match[1];
     this.pushLine(`${name}(${match[2]}) {`);
-    this.blockStack.push("method");
+    this.blockStack.push({ type: "method", lineNumber });
     this.indent += 1;
   }
 
@@ -404,7 +411,8 @@ class Compiler {
 
   finish() {
     if (this.blockStack.length > 0) {
-      throw new Error(`Missing end for ${this.blockStack[this.blockStack.length - 1]} block`);
+      const block = this.blockStack[this.blockStack.length - 1];
+      throw new Error(`Line ${block.lineNumber}: missing end for ${block.type} block`);
     }
 
     this.output.push("");
@@ -1069,5 +1077,6 @@ if (require.main === module) {
 
 module.exports = {
   compile,
+  check,
   main
 };

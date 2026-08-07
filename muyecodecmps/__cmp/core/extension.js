@@ -1,4 +1,5 @@
 const vscode = require("vscode");
+const compiler = require("./muyecodec.js");
 
 const builtinCompletions = [
   {
@@ -184,6 +185,7 @@ const builtinCompletions = [
 ];
 
 function activate(context) {
+  const diagnostics = vscode.languages.createDiagnosticCollection("muyecode");
   const provider = vscode.languages.registerCompletionItemProvider("muyecode", {
     provideCompletionItems(document) {
       const completions = builtinCompletions.map((entry) => {
@@ -217,7 +219,45 @@ function activate(context) {
     runCompiler(true);
   });
 
-  context.subscriptions.push(provider, compileCommand, runCommand, compileRunCommand);
+  const changeSubscription = vscode.workspace.onDidChangeTextDocument((event) => {
+    if (event.document.languageId === "muyecode") {
+      updateDiagnostics(event.document, diagnostics);
+    }
+  });
+  const openSubscription = vscode.workspace.onDidOpenTextDocument((document) => {
+    if (document.languageId === "muyecode") {
+      updateDiagnostics(document, diagnostics);
+    }
+  });
+  const closeSubscription = vscode.workspace.onDidCloseTextDocument((document) => {
+    diagnostics.delete(document.uri);
+  });
+
+  if (vscode.window.activeTextEditor?.document.languageId === "muyecode") {
+    updateDiagnostics(vscode.window.activeTextEditor.document, diagnostics);
+  }
+
+  context.subscriptions.push(provider, diagnostics, compileCommand, runCommand, compileRunCommand, changeSubscription, openSubscription, closeSubscription);
+}
+
+function updateDiagnostics(document, diagnostics) {
+  try {
+    compiler.check(document.getText());
+    diagnostics.set(document.uri, []);
+  } catch (error) {
+    diagnostics.set(document.uri, [createDiagnostic(document, error)]);
+  }
+}
+
+function createDiagnostic(document, error) {
+  const message = error && error.message ? error.message : String(error);
+  const match = message.match(/^Line\s+(\d+):\s*(.*)$/);
+  const line = match ? Math.max(Number(match[1]) - 1, 0) : 0;
+  const lineText = document.lineAt(Math.min(line, document.lineCount - 1)).text;
+  const range = new vscode.Range(line, 0, line, Math.max(lineText.length, 1));
+  const diagnostic = new vscode.Diagnostic(range, match ? match[2] : message, vscode.DiagnosticSeverity.Error);
+  diagnostic.source = "Muyecode";
+  return diagnostic;
 }
 
 function runCompiler(shouldRun) {

@@ -21,5 +21,15 @@
     ["\"", "\""],
     ["'", "'"]
   ],
+  "indentationRules": {
+    "increaseIndentPattern": "^\\s*(?:class\\b.*|method\\b.*|function\\b.*|if\\b.*|while\\b.*|else\\s*)$",
+    "decreaseIndentPattern": "^\\s*(?:end|else)\\b"
+  },
+  "folding": {
+    "markers": {
+      "start": "^\\s*(?:class|method|function|if|while)\\b",
+      "end": "^\\s*end\\b"
+    }
+  },
   "wordPattern": "(-?\\d*\\.\\d\\w*)|([^\\`\\~\\!\\@\\#\\%\\^\\&\\*\\(\\)\\=\\+\\[\\{\\]\\}\\\\\\|\\;\\:\\'\\\"\\,\\.\\<\\>\\/\\?\\s]+)"
 }
