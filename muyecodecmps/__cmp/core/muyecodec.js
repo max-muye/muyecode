@@ -13,7 +13,7 @@ function main() {
   }
 
   const source = fs.readFileSync(options.inputPath, "utf8");
-  const outputPath = resolveOutputPath(options);
+  const outputPath = resolveOutputPath(options, source);
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 
   if (options.makeExecutable) {
@@ -48,7 +48,7 @@ function getExecutableRunPath(outputPath) {
   return process.platform === "win32" ? outputPath : `./${outputPath}`;
 }
 
-function resolveOutputPath(options) {
+function resolveOutputPath(options, source = "") {
   if (options.outputPath && options.outputPath !== "exec") {
     return options.outputPath;
   }
@@ -65,7 +65,11 @@ function resolveOutputPath(options) {
     return getDefaultExecutablePath(outputDir, sourceName);
   }
 
-  return path.join(outputDir, `${sourceName}.js`);
+  return path.join(outputDir, `${sourceName}${needsHtmlOutput(source) ? ".html" : ".js"}`);
+}
+
+function needsHtmlOutput(source) {
+  return /(^|\n)\s*(?:game|wait|sleep)\b/.test(source) || /\bkey\s*\(/.test(source);
 }
 
 function getDefaultExecutablePath(outputDir, sourceName) {

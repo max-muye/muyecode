@@ -115,10 +115,11 @@ Build a real macOS executable:
 Muyecode can make browser canvas games.
 
 ```sh
-./muyecodecmp snake.muyecode -o snake.html -o run
+./muyecodecmp snake.muyecode -o run
 ```
 
 Game helpers include `game`, `wait`, `key`, `random`, `clear`, and `box`.
+Game files automatically compile to `.html` when no output filename is provided.
 
 
 ## Notes

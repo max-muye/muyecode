@@ -349,8 +349,10 @@ end
 Run the snake example:
 
 ```sh
-./muyecodecmp snake.muyecode -o snake.html -o run
+./muyecodecmp snake.muyecode -o run
 ```
+
+Files that use `game`, `wait`, `sleep`, or `key(...)` automatically compile to `.html` when no output filename is provided.
 
 ## Complete Example
 
