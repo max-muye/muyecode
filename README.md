@@ -30,17 +30,11 @@ Press `F5` to start an Extension Development Host window. Open a `.muyecode` fil
 
 ## Install Locally In VS Code
 
-For normal VS Code use on macOS or Linux, install it directly into your VS Code extensions folder:
+For normal VS Code use, install it directly into your VS Code extensions folder:
 
 ```sh
 git clone https://github.com/max-muye/muyecode.git ~/.vscode/extensions/muyecode-language-local
 chmod +x ~/.vscode/extensions/muyecode-language-local/muyecodecmp
-```
-
-On Windows PowerShell:
-
-```powershell
-git clone https://github.com/max-muye/muyecode.git "$env:USERPROFILE\.vscode\extensions\muyecode-language-local"
 ```
 
 Then run:
@@ -58,13 +52,6 @@ cd ~/.vscode/extensions/muyecode-language-local
 git pull
 ```
 
-On Windows PowerShell:
-
-```powershell
-cd "$env:USERPROFILE\.vscode\extensions\muyecode-language-local"
-git pull
-```
-
 ## Create A Program
 
 Create a file like `hello.muyecode`:
@@ -78,12 +65,6 @@ Compile it:
 
 ```sh
 ./muyecodecmp hello.muyecode
-```
-
-On Windows PowerShell:
-
-```powershell
-.\muyecodecmp.cmd hello.muyecode
 ```
 
 That creates:
@@ -124,14 +105,6 @@ Build a real macOS executable:
 ./drawing_muyecode_exec
 ```
 
-Build a real Windows executable:
-
-```powershell
-.\muyecodecmp.cmd drawing.muyecode -o drawing_muyecode_exec.exe -o exec
-.\drawing_muyecode_exec.exe
-```
-
-Windows native executable output needs either Visual Studio Build Tools `cl` or MinGW `gcc` available in your PATH.
 
 ## Notes
 
