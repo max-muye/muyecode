@@ -2,4 +2,14 @@
 
 cmp "random"
 
-declare random(max)
+declare rand()
+declare rand_int(min, max)
+declare rand_double(min, max)
+
+function rand_int(min, max)
+    return min + rand() % (max - min + 1)
+end
+
+function rand_double(min, max)
+    return min + rand() / 1000000000 * (max - min)
+end

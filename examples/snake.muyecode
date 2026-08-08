@@ -16,7 +16,7 @@ class SnakeGame
     value moves = []
 
     method newFood()
-        return {x: random(20) * this.size, y: random(20) * this.size}
+        return {x: rand_int(0, 19) * this.size, y: rand_int(0, 19) * this.size}
     end
 
     method reset()

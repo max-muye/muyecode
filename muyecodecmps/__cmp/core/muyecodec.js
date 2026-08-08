@@ -245,7 +245,7 @@ class Compiler {
       "const len = (value) => value.length;",
       "const str = (value) => String(value);",
       "const num = (value) => Number(value);",
-      "const random = (max) => Math.floor(Math.random() * max);",
+      "const rand = () => Math.floor(Math.random() * 1000000000);",
       "const openfile = (filePath) => require(\"fs\").readFileSync(filePath, \"utf8\");",
       "const writefile = (filePath, content) => require(\"fs\").writeFileSync(filePath, String(content));",
       "const appendfile = (filePath, content) => require(\"fs\").appendFileSync(filePath, String(content));",
@@ -272,7 +272,7 @@ class Compiler {
     }
 
     if (rawLine.startsWith("get ")) {
-      this.imports.add(compileGet(rawLine, lineNumber, this.options));
+      this.importHeader(compileGet(rawLine, lineNumber, this.options));
       return;
     }
 
@@ -282,7 +282,7 @@ class Compiler {
     }
 
     if (rawLine.startsWith("cmp ")) {
-      compileCmp(rawLine, lineNumber);
+      this.imports.add(compileCmp(rawLine, lineNumber));
       return;
     }
 
@@ -443,6 +443,14 @@ class Compiler {
     return this.blockStack[this.blockStack.length - 1]?.type === "class";
   }
 
+  importHeader(header) {
+    this.imports.add(header.name);
+
+    for (const line of header.lines) {
+      this.compileLine(line.text, line.lineNumber);
+    }
+  }
+
   finish() {
     if (this.blockStack.length > 0) {
       const block = this.blockStack[this.blockStack.length - 1];
@@ -486,7 +494,7 @@ class HtmlCompiler {
     }
 
     if (rawLine.startsWith("get ")) {
-      this.imports.add(compileGet(rawLine, lineNumber, this.options));
+      this.importHeader(compileGet(rawLine, lineNumber, this.options));
       return;
     }
 
@@ -496,7 +504,7 @@ class HtmlCompiler {
     }
 
     if (rawLine.startsWith("cmp ")) {
-      compileCmp(rawLine, lineNumber);
+      this.imports.add(compileCmp(rawLine, lineNumber));
       return;
     }
 
@@ -667,6 +675,14 @@ class HtmlCompiler {
     return this.blockStack[this.blockStack.length - 1] === "class";
   }
 
+  importHeader(header) {
+    this.imports.add(header.name);
+
+    for (const line of header.lines) {
+      this.compileLine(line.text, line.lineNumber);
+    }
+  }
+
   finish() {
     if (this.blockStack.length > 0) {
       throw new Error(`Missing end for ${this.blockStack[this.blockStack.length - 1]} block`);
@@ -693,7 +709,7 @@ class HtmlCompiler {
       "    const num = (value) => Number(value);",
       "    const print = (...values) => console.log(values.map(str).join(\" \"));",
       "    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));",
-      "    const random = (max) => Math.floor(Math.random() * max);",
+      "    const rand = () => Math.floor(Math.random() * 1000000000);",
       "    const push = (list, value) => list.push(value);",
       "    const removefirst = (list) => list.shift();",
       "    const keys = {};",
@@ -745,7 +761,7 @@ class TkinterCompiler {
     }
 
     if (rawLine.startsWith("get ")) {
-      this.imports.add(compileGet(rawLine, lineNumber, this.options));
+      this.imports.add(compileGet(rawLine, lineNumber, this.options).name);
       return;
     }
 
@@ -755,7 +771,7 @@ class TkinterCompiler {
     }
 
     if (rawLine.startsWith("cmp ")) {
-      compileCmp(rawLine, lineNumber);
+      this.imports.add(compileCmp(rawLine, lineNumber));
       return;
     }
 
@@ -854,7 +870,7 @@ class CocoaCompiler {
     }
 
     if (rawLine.startsWith("get ")) {
-      this.imports.add(compileGet(rawLine, lineNumber, this.options));
+      this.imports.add(compileGet(rawLine, lineNumber, this.options).name);
       return;
     }
 
@@ -864,7 +880,7 @@ class CocoaCompiler {
     }
 
     if (rawLine.startsWith("cmp ")) {
-      compileCmp(rawLine, lineNumber);
+      this.imports.add(compileCmp(rawLine, lineNumber));
       return;
     }
 
@@ -1046,6 +1062,7 @@ function compileGet(line, lineNumber, options = {}) {
   const headerSource = fs.readFileSync(headerPath, "utf8");
   const headerLines = headerSource.split(/\r?\n/);
   let compilerName = null;
+  const importedLines = [];
 
   for (let index = 0; index < headerLines.length; index += 1) {
     const headerLine = stripComment(headerLines[index]).trim();
@@ -1061,14 +1078,17 @@ function compileGet(line, lineNumber, options = {}) {
 
     if (headerLine.startsWith("declare ")) {
       compileDeclare(headerLine, index + 1);
+      continue;
     }
+
+    importedLines.push({ text: headerLine, lineNumber: index + 1 });
   }
 
   if (compilerName !== libraryName) {
     throw new Error(`Line ${lineNumber}: ${headerPath} must include cmp "${libraryName}"`);
   }
 
-  return libraryName;
+  return { name: libraryName, lines: importedLines };
 }
 
 function assertImports(line, lineNumber, imports) {
@@ -1081,7 +1101,7 @@ function assertImports(line, lineNumber, imports) {
   }
 
   if (usesRandomLibrary(line) && !imports.has("random")) {
-    throw new Error(`Line ${lineNumber}: use get "random" before random(max)`);
+    throw new Error(`Line ${lineNumber}: use get "random" before random helpers`);
   }
 }
 
@@ -1094,7 +1114,7 @@ function usesTimeLibrary(line) {
 }
 
 function usesRandomLibrary(line) {
-  return /\brandom\s*\(/.test(line);
+  return /\b(?:rand|rand_int|rand_double)\s*\(/.test(line);
 }
 
 function findHeaderPath(libraryName, baseDir = process.cwd()) {

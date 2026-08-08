@@ -86,14 +86,14 @@ lib/
 Current headers:
 
 - `get "canvas"` for canvas, drawing, and keyboard helpers
-- `get "random"` for `random(max)`
+- `get "random"` for `rand()`, `rand_int(min, max)`, and `rand_double(min, max)`
 - `get "time"` for `wait(ms)` and `sleep(ms)`
 
 Header files use `cmp` to say which compiler helper they enable, then `declare` lines for the names:
 
 ```muyecode
 cmp "random"
-declare random(max)
+declare rand()
 ```
 
 ## Values
@@ -353,7 +353,9 @@ Useful commands:
 - `wait ms` pauses inside canvas mode when `get "time"` is used
 - `key("ArrowUp")` checks if a key is held
 - `pressed("ArrowUp")` checks if a key was pressed since the last check
-- `random(max)` returns a random integer from `0` to `max - 1`
+- `rand()` returns the compiler random value
+- `rand_int(min, max)` returns a random integer from `min` to `max`
+- `rand_double(min, max)` returns a random decimal from `min` to `max`
 - `clear color` clears the whole canvas
 - `box x y size` draws a filled square
 

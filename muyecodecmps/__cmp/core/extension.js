@@ -249,10 +249,22 @@ const builtinCompletions = [
     detail: "Check if a key was pressed in canvas mode"
   },
   {
-    label: "random",
+    label: "rand",
     kind: vscode.CompletionItemKind.Function,
-    insertText: "random(${1:max})",
-    detail: "Random integer from 0 to max - 1"
+    insertText: "rand()",
+    detail: "Random compiler value"
+  },
+  {
+    label: "rand_int",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "rand_int(${1:min}, ${2:max})",
+    detail: "Random integer from min to max"
+  },
+  {
+    label: "rand_double",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "rand_double(${1:min}, ${2:max})",
+    detail: "Random decimal from min to max"
   }
 ];
 
