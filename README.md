@@ -161,10 +161,10 @@ examples/snake.muyecode
 
 ## Native GUI Window
 
-Create a simple GUI app with `get "gui"`:
+Create a simple GUI app with `get "canvas/gui"`:
 
 ```muyecode
-get "gui"
+get "canvas/gui"
 
 window 420 260 "Muyecode GUI" "white"
 label 30 30 330 34 "Hello from a real GUI window" 22

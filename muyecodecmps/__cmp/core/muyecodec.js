@@ -79,7 +79,7 @@ function needsHtmlOutput(source) {
 }
 
 function needsNativeOutput(source) {
-  return /(^|\n)\s*get\s+["']gui["']/.test(source) || /(^|\n)\s*window\b/.test(source);
+  return /(^|\n)\s*get\s+["'](?:[A-Za-z_][A-Za-z0-9_]*\/)*gui["']/.test(source) || /(^|\n)\s*window\b/.test(source);
 }
 
 function getDefaultExecutablePath(outputDir, sourceName) {
@@ -1158,17 +1158,17 @@ function compileValue(line, lineNumber, keyword) {
 }
 
 function compileGet(line, lineNumber, options = {}) {
-  const match = line.match(/^get\s+["']([A-Za-z_][A-Za-z0-9_]*)["']$/);
+  const match = line.match(/^get\s+(?:"([^"]+)"|'([^']+)'|([A-Za-z_][A-Za-z0-9_/]*))$/);
 
   if (!match) {
     throw new Error(`Line ${lineNumber}: expected get "name"`);
   }
 
-  const libraryName = match[1];
-  const headerPath = findHeaderPath(libraryName, options.baseDir);
+  const libraryPath = match[1] || match[2] || match[3];
+  let compilerName = getLibraryCompilerName(libraryPath, lineNumber);
+  const headerPath = findHeaderPath(libraryPath, options.baseDir);
   const headerSource = fs.readFileSync(headerPath, "utf8");
   const headerLines = headerSource.split(/\r?\n/);
-  let compilerName = null;
   const importedLines = [];
 
   for (let index = 0; index < headerLines.length; index += 1) {
@@ -1191,11 +1191,16 @@ function compileGet(line, lineNumber, options = {}) {
     importedLines.push({ text: headerLine, lineNumber: index + 1 });
   }
 
-  if (compilerName !== libraryName) {
-    throw new Error(`Line ${lineNumber}: ${headerPath} must include cmp "${libraryName}"`);
+  return { name: compilerName, lines: importedLines };
+}
+
+function getLibraryCompilerName(libraryPath, lineNumber) {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*(?:\/[A-Za-z_][A-Za-z0-9_]*)*$/.test(libraryPath)) {
+    throw new Error(`Line ${lineNumber}: invalid header name "${libraryPath}"`);
   }
 
-  return { name: libraryName, lines: importedLines };
+  const parts = libraryPath.split("/");
+  return parts[parts.length - 1];
 }
 
 function assertImports(line, lineNumber, imports) {

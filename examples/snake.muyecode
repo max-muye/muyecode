@@ -1,4 +1,4 @@
-get "canvas"
+get "canvas/html"
 get "random"
 get "time"
 

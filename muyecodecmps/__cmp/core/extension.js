@@ -518,7 +518,7 @@ function findDeclaredValues(source) {
 
 function findDefinition(document, position) {
   const line = document.lineAt(position.line).text;
-  const importMatch = line.match(/\bget\s+["']([A-Za-z_][A-Za-z0-9_]*)["']/);
+  const importMatch = line.match(/\bget\s+["']([A-Za-z_][A-Za-z0-9_]*(?:\/[A-Za-z_][A-Za-z0-9_]*)*)["']/);
 
   if (importMatch && isPositionInsideMatch(line, position.character, importMatch)) {
     return locationForFile(findHeaderPath(document, importMatch[1]), 0, 0);
@@ -561,7 +561,7 @@ function isPositionInsideMatch(line, character, match) {
 function findImportedHeaders(document) {
   const headers = [];
   const source = document.getText();
-  const pattern = /^\s*get\s+["']([A-Za-z_][A-Za-z0-9_]*)["']/gm;
+  const pattern = /^\s*get\s+["']([A-Za-z_][A-Za-z0-9_]*(?:\/[A-Za-z_][A-Za-z0-9_]*)*)["']/gm;
   let match;
 
   while ((match = pattern.exec(source)) !== null) {
