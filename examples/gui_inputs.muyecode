@@ -6,6 +6,6 @@ label "title" 24 20 300 28 "Type your name, then wait one second." 16
 textbox "name" 24 62 220 30 "Muye"
 checkbox "ready" 24 104 220 28 "Ready" true
 
-wait 1000
+sleep 1
 print "name:" guivalue("name")
 print "ready:" guivalue("ready")

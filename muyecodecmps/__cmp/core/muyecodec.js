@@ -76,7 +76,7 @@ function resolveOutputPath(options, source = "") {
 }
 
 function needsHtmlOutput(source) {
-  return /(^|\n)\s*(?:canvas|wait)\b/.test(source) || /\b(?:key|pressed)\s*\(/.test(source);
+  return /(^|\n)\s*(?:canvas|wait|sleep)\b/.test(source) || /\b(?:key|pressed)\s*\(/.test(source);
 }
 
 function needsNativeOutput(source) {
@@ -161,7 +161,11 @@ function compile(source, options = {}) {
 }
 
 function check(source, options = {}) {
-  if (needsNativeOutput(source)) {
+  const baseDir = options.baseDir || process.cwd();
+
+  if (sourceImportsCompiler(source, "gui", baseDir) && (needsHtmlOutput(source) || usesGuiRuntime(source))) {
+    compileHtml(source, options);
+  } else if (needsNativeOutput(source)) {
     compileCocoa(source, options);
   } else if (needsHtmlOutput(source)) {
     compileHtml(source, options);
@@ -618,6 +622,11 @@ class HtmlCompiler {
 
     if (rawLine.startsWith("wait ")) {
       this.pushLine(compileWait(rawLine));
+      return;
+    }
+
+    if (rawLine.startsWith("sleep ")) {
+      this.pushLine(compileSleep(rawLine));
       return;
     }
 
@@ -1553,7 +1562,7 @@ function usesCanvasLibrary(line) {
 }
 
 function usesTimeLibrary(line) {
-  return /^wait\b/.test(line);
+  return /^(wait|sleep)\b/.test(line);
 }
 
 function usesRandomLibrary(line) {
@@ -1666,6 +1675,11 @@ function compileReturn(line) {
 function compileWait(line) {
   const body = line.replace(/^wait\s+/, "").trim();
   return `await wait(${body});`;
+}
+
+function compileSleep(line) {
+  const body = line.replace(/^sleep\s+/, "").trim();
+  return `await sleep(${body});`;
 }
 
 function isDrawingCommand(line) {
