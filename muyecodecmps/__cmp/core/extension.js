@@ -1,4 +1,6 @@
 const vscode = require("vscode");
+const fs = require("fs");
+const path = require("path");
 const compiler = require("./muyecodec.js");
 
 const builtinCompletions = [
@@ -292,6 +294,11 @@ function activate(context) {
       return completions;
     }
   });
+  const definitionProvider = vscode.languages.registerDefinitionProvider("muyecode", {
+    provideDefinition(document, position) {
+      return findDefinition(document, position);
+    }
+  });
 
   const compileCommand = vscode.commands.registerCommand("muyecode.compile", () => {
     runCompiler(false);
@@ -332,7 +339,7 @@ function activate(context) {
     updateDiagnostics(vscode.window.activeTextEditor.document, diagnostics);
   }
 
-  context.subscriptions.push(provider, diagnostics, compileCommand, runCommand, compileRunCommand, changeSubscription, openSubscription, closeSubscription);
+  context.subscriptions.push(provider, definitionProvider, diagnostics, compileCommand, runCommand, compileRunCommand, changeSubscription, openSubscription, closeSubscription);
 }
 
 async function maybeInsertEnd(event) {
@@ -460,7 +467,7 @@ function getTerminal() {
 
 function getWorkspaceFolder(filePath) {
   const folder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
-  return folder ? folder.uri.fsPath : require("path").dirname(filePath);
+  return folder ? folder.uri.fsPath : path.dirname(filePath);
 }
 
 function quoteShell(value) {
@@ -477,6 +484,168 @@ function findDeclaredValues(source) {
   }
 
   return names;
+}
+
+function findDefinition(document, position) {
+  const line = document.lineAt(position.line).text;
+  const importMatch = line.match(/\bget\s+["']([A-Za-z_][A-Za-z0-9_]*)["']/);
+
+  if (importMatch && isPositionInsideMatch(line, position.character, importMatch)) {
+    return locationForFile(findHeaderPath(document, importMatch[1]), 0, 0);
+  }
+
+  const cmpMatch = line.match(/\bcmp\s+["']([A-Za-z_][A-Za-z0-9_]*)["']/);
+
+  if (cmpMatch && isPositionInsideMatch(line, position.character, cmpMatch)) {
+    return locationForCompiler(cmpMatch[1]);
+  }
+
+  const wordRange = document.getWordRangeAtPosition(position, /[A-Za-z_][A-Za-z0-9_]*/);
+
+  if (!wordRange) {
+    return null;
+  }
+
+  const word = document.getText(wordRange);
+  const localDefinition = findNameInDocument(document, word);
+
+  if (localDefinition) {
+    return localDefinition;
+  }
+
+  for (const headerPath of findImportedHeaders(document)) {
+    const headerDefinition = findNameInFile(headerPath, word);
+
+    if (headerDefinition) {
+      return headerDefinition;
+    }
+  }
+
+  return locationForCompilerBuiltin(word);
+}
+
+function isPositionInsideMatch(line, character, match) {
+  return character >= match.index && character <= match.index + match[0].length;
+}
+
+function findImportedHeaders(document) {
+  const headers = [];
+  const source = document.getText();
+  const pattern = /^\s*get\s+["']([A-Za-z_][A-Za-z0-9_]*)["']/gm;
+  let match;
+
+  while ((match = pattern.exec(source)) !== null) {
+    const headerPath = findHeaderPath(document, match[1]);
+
+    if (headerPath) {
+      headers.push(headerPath);
+    }
+  }
+
+  return headers;
+}
+
+function findHeaderPath(document, name) {
+  const fileName = `${name}.muyecode`;
+  const baseDir = path.dirname(document.fileName);
+  const workspaceDir = getWorkspaceFolder(document.fileName);
+  const candidates = [
+    path.join(baseDir, "lib", fileName),
+    path.join(baseDir, "..", "lib", fileName),
+    path.join(workspaceDir, "lib", fileName),
+    path.join(__dirname, "..", "..", "..", "lib", fileName)
+  ];
+
+  return candidates.find((candidate) => fs.existsSync(candidate)) || null;
+}
+
+function findNameInDocument(document, name) {
+  return findNameInText(document.getText(), name, document.uri);
+}
+
+function findNameInFile(filePath, name) {
+  if (!filePath || !fs.existsSync(filePath)) {
+    return null;
+  }
+
+  return findNameInText(fs.readFileSync(filePath, "utf8"), name, vscode.Uri.file(filePath));
+}
+
+function findNameInText(source, name, uri) {
+  const escaped = escapeRegExp(name);
+  const patterns = [
+    new RegExp(`^\\s*(?:value|let)\\s+${escaped}\\b`, "m"),
+    new RegExp(`^\\s*class\\s+${escaped}\\b`, "m"),
+    new RegExp(`^\\s*function\\s+${escaped}\\s*\\(`, "m"),
+    new RegExp(`^\\s*method\\s+${escaped}\\s*(?:\\(|=)`, "m"),
+    new RegExp(`^\\s*declare\\s+${escaped}\\s*(?:\\(|$)`, "m")
+  ];
+
+  for (const pattern of patterns) {
+    const match = pattern.exec(source);
+
+    if (match) {
+      return locationForOffset(source, uri, match.index + match[0].indexOf(name));
+    }
+  }
+
+  return null;
+}
+
+function locationForCompiler(name) {
+  const targets = {
+    canvas: "function usesCanvasLibrary",
+    random: "const rand =",
+    time: "const wait ="
+  };
+
+  return locationForCompilerPattern(targets[name] || "function compileCmp");
+}
+
+function locationForCompilerBuiltin(name) {
+  const targets = {
+    rand: "const rand =",
+    wait: "const wait =",
+    canvas: "function compileCanvasDrawingCommand",
+    pen: "function compileCanvasDrawingCommand",
+    fill: "function compileCanvasDrawingCommand",
+    line: "function compileCanvasDrawingCommand",
+    rect: "function compileCanvasDrawingCommand",
+    box: "function compileCanvasDrawingCommand",
+    circle: "function compileCanvasDrawingCommand",
+    text: "function compileCanvasDrawingCommand",
+    clear: "function compileCanvasDrawingCommand",
+    key: "const key =",
+    pressed: "const pressed ="
+  };
+
+  return targets[name] ? locationForCompilerPattern(targets[name]) : null;
+}
+
+function locationForCompilerPattern(pattern) {
+  const compilerPath = path.join(__dirname, "muyecodec.js");
+  const source = fs.readFileSync(compilerPath, "utf8");
+  const index = source.indexOf(pattern);
+
+  return locationForOffset(source, vscode.Uri.file(compilerPath), Math.max(index, 0));
+}
+
+function locationForFile(filePath, line, character) {
+  if (!filePath) {
+    return null;
+  }
+
+  return new vscode.Location(vscode.Uri.file(filePath), new vscode.Position(line, character));
+}
+
+function locationForOffset(source, uri, offset) {
+  const before = source.slice(0, offset);
+  const lines = before.split(/\r?\n/);
+  return new vscode.Location(uri, new vscode.Position(lines.length - 1, lines[lines.length - 1].length));
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function deactivate() {}
