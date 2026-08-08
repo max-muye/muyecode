@@ -3,16 +3,7 @@
   "displayName": "Muyecode Language",
   "description": "VS Code language support for .muyecode files.",
   "version": "0.0.1",
-  "publisher": "max-muye",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/max-muye/muyecode.git"
-  },
-  "homepage": "https://github.com/max-muye/muyecode#readme",
-  "bugs": {
-    "url": "https://github.com/max-muye/muyecode/issues"
-  },
+  "publisher": "local",
   "engines": {
     "vscode": "^1.80.0"
   },
