@@ -233,6 +233,7 @@ function openFile(filePath) {
 class Compiler {
   constructor(options = {}) {
     this.options = options;
+    this.imports = new Set();
     this.output = [
       "\"use strict\";",
       "",
@@ -271,7 +272,7 @@ class Compiler {
     }
 
     if (rawLine.startsWith("get ")) {
-      compileGet(rawLine, lineNumber, this.options);
+      this.imports.add(compileGet(rawLine, lineNumber, this.options));
       return;
     }
 
@@ -289,6 +290,8 @@ class Compiler {
       this.compileEnd(lineNumber);
       return;
     }
+
+    assertImports(rawLine, lineNumber, this.imports);
 
     if (rawLine.startsWith("value ") || rawLine.startsWith("let ")) {
       this.pushLines(this.isDirectlyInClass() ? compileClassValue(rawLine, lineNumber) : compileValue(rawLine, lineNumber, "let"));
@@ -459,6 +462,7 @@ class Compiler {
 class HtmlCompiler {
   constructor(options = {}) {
     this.options = options;
+    this.imports = new Set();
     this.width = 640;
     this.height = 420;
     this.background = "\"white\"";
@@ -477,7 +481,7 @@ class HtmlCompiler {
     }
 
     if (rawLine.startsWith("get ")) {
-      compileGet(rawLine, lineNumber, this.options);
+      this.imports.add(compileGet(rawLine, lineNumber, this.options));
       return;
     }
 
@@ -495,6 +499,8 @@ class HtmlCompiler {
       this.compileEnd(lineNumber);
       return;
     }
+
+    assertImports(rawLine, lineNumber, this.imports);
 
     if (rawLine.startsWith("canvas ")) {
       this.compileCanvas(rawLine);
@@ -713,6 +719,7 @@ class HtmlCompiler {
 class TkinterCompiler {
   constructor(options = {}) {
     this.options = options;
+    this.imports = new Set();
     this.width = "640";
     this.height = "420";
     this.background = "\"white\"";
@@ -728,7 +735,7 @@ class TkinterCompiler {
     }
 
     if (rawLine.startsWith("get ")) {
-      compileGet(rawLine, lineNumber, this.options);
+      this.imports.add(compileGet(rawLine, lineNumber, this.options));
       return;
     }
 
@@ -738,6 +745,7 @@ class TkinterCompiler {
     }
 
     if (rawLine.startsWith("canvas ")) {
+      assertImports(rawLine, lineNumber, this.imports);
       const args = splitCommandArgs(rawLine.slice("canvas ".length).trim());
       this.width = args[0] || this.width;
       this.height = args[1] || this.height;
@@ -746,6 +754,7 @@ class TkinterCompiler {
     }
 
     if (rawLine.startsWith("pen ")) {
+      assertImports(rawLine, lineNumber, this.imports);
       const args = splitCommandArgs(rawLine.slice("pen ".length).trim());
       this.penColor = args[0] || this.penColor;
       this.penWidth = args[1] || this.penWidth;
@@ -753,30 +762,35 @@ class TkinterCompiler {
     }
 
     if (rawLine.startsWith("fill ")) {
+      assertImports(rawLine, lineNumber, this.imports);
       const args = splitCommandArgs(rawLine.slice("fill ".length).trim());
       this.fillColor = args[0] || "\"\"";
       return;
     }
 
     if (rawLine.startsWith("line ")) {
+      assertImports(rawLine, lineNumber, this.imports);
       const args = splitCommandArgs(rawLine.slice("line ".length).trim());
       this.output.push(`screen.create_line(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, fill=${toPython(this.penColor)}, width=${this.penWidth})`);
       return;
     }
 
     if (rawLine.startsWith("rect ")) {
+      assertImports(rawLine, lineNumber, this.imports);
       const args = splitCommandArgs(rawLine.slice("rect ".length).trim());
       this.output.push(`screen.create_rectangle(${args[0]}, ${args[1]}, ${Number(args[0]) + Number(args[2])}, ${Number(args[1]) + Number(args[3])}, outline=${toPython(this.penColor)}, fill=${toPython(this.fillColor)}, width=${this.penWidth})`);
       return;
     }
 
     if (rawLine.startsWith("circle ")) {
+      assertImports(rawLine, lineNumber, this.imports);
       const args = splitCommandArgs(rawLine.slice("circle ".length).trim());
       this.output.push(`screen.create_oval(${args[0]} - ${args[2]}, ${args[1]} - ${args[2]}, ${args[0]} + ${args[2]}, ${args[1]} + ${args[2]}, outline=${toPython(this.penColor)}, fill=${toPython(this.fillColor)}, width=${this.penWidth})`);
       return;
     }
 
     if (rawLine.startsWith("text ")) {
+      assertImports(rawLine, lineNumber, this.imports);
       const args = splitCommandArgs(rawLine.slice("text ".length).trim());
       this.output.push(`screen.create_text(${args[0]}, ${args[1]}, text=${toPython(args[2])}, fill=${toPython(this.penColor)}, font=("Arial", ${args[3] || "24"}))`);
       return;
@@ -809,6 +823,7 @@ class TkinterCompiler {
 class CocoaCompiler {
   constructor(options = {}) {
     this.options = options;
+    this.imports = new Set();
     this.width = "640";
     this.height = "420";
     this.background = "\"white\"";
@@ -824,7 +839,7 @@ class CocoaCompiler {
     }
 
     if (rawLine.startsWith("get ")) {
-      compileGet(rawLine, lineNumber, this.options);
+      this.imports.add(compileGet(rawLine, lineNumber, this.options));
       return;
     }
 
@@ -834,6 +849,7 @@ class CocoaCompiler {
     }
 
     if (rawLine.startsWith("canvas ")) {
+      assertImports(rawLine, lineNumber, this.imports);
       const args = splitCommandArgs(rawLine.slice("canvas ".length).trim());
       this.width = args[0] || this.width;
       this.height = args[1] || this.height;
@@ -842,6 +858,7 @@ class CocoaCompiler {
     }
 
     if (rawLine.startsWith("pen ")) {
+      assertImports(rawLine, lineNumber, this.imports);
       const args = splitCommandArgs(rawLine.slice("pen ".length).trim());
       this.penColor = args[0] || this.penColor;
       this.penWidth = args[1] || this.penWidth;
@@ -849,30 +866,35 @@ class CocoaCompiler {
     }
 
     if (rawLine.startsWith("fill ")) {
+      assertImports(rawLine, lineNumber, this.imports);
       const args = splitCommandArgs(rawLine.slice("fill ".length).trim());
       this.fillColor = args[0] || "\"clear\"";
       return;
     }
 
     if (rawLine.startsWith("line ")) {
+      assertImports(rawLine, lineNumber, this.imports);
       const args = splitCommandArgs(rawLine.slice("line ".length).trim());
       this.drawLines.push(`drawLine(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${objcString(this.penColor)}, ${this.penWidth});`);
       return;
     }
 
     if (rawLine.startsWith("rect ")) {
+      assertImports(rawLine, lineNumber, this.imports);
       const args = splitCommandArgs(rawLine.slice("rect ".length).trim());
       this.drawLines.push(`drawRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}, ${objcString(this.penColor)}, ${objcString(this.fillColor)}, ${this.penWidth});`);
       return;
     }
 
     if (rawLine.startsWith("circle ")) {
+      assertImports(rawLine, lineNumber, this.imports);
       const args = splitCommandArgs(rawLine.slice("circle ".length).trim());
       this.drawLines.push(`drawCircle(${args[0]}, ${args[1]}, ${args[2]}, ${objcString(this.penColor)}, ${objcString(this.fillColor)}, ${this.penWidth});`);
       return;
     }
 
     if (rawLine.startsWith("text ")) {
+      assertImports(rawLine, lineNumber, this.imports);
       const args = splitCommandArgs(rawLine.slice("text ".length).trim());
       this.drawLines.push(`drawText(${args[0]}, ${args[1]}, ${objcString(args[2])}, ${args[3] || "24"}, ${objcString(this.penColor)});`);
       return;
@@ -1018,7 +1040,25 @@ function compileGet(line, lineNumber, options = {}) {
     compileDeclare(headerLine, index + 1);
   }
 
-  return "";
+  return libraryName;
+}
+
+function assertImports(line, lineNumber, imports) {
+  if (usesCanvasLibrary(line) && !imports.has("canvas")) {
+    throw new Error(`Line ${lineNumber}: use get "canvas" before canvas helpers`);
+  }
+
+  if (usesRandomLibrary(line) && !imports.has("random")) {
+    throw new Error(`Line ${lineNumber}: use get "random" before random(max)`);
+  }
+}
+
+function usesCanvasLibrary(line) {
+  return /^(canvas|pen|fill|line|rect|box|circle|text|clear|wait|sleep)\b/.test(line) || /\b(?:key|pressed)\s*\(/.test(line);
+}
+
+function usesRandomLibrary(line) {
+  return /\brandom\s*\(/.test(line);
 }
 
 function findHeaderPath(libraryName, baseDir = process.cwd()) {
