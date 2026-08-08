@@ -375,7 +375,7 @@ function getIndentUnit(editor) {
 
 function updateDiagnostics(document, diagnostics) {
   try {
-    compiler.check(document.getText());
+    compiler.check(document.getText(), { baseDir: require("path").dirname(document.fileName) });
     diagnostics.set(document.uri, []);
   } catch (error) {
     diagnostics.set(document.uri, [createDiagnostic(document, error)]);

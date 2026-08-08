@@ -13,6 +13,7 @@ function main() {
   }
 
   const source = fs.readFileSync(options.inputPath, "utf8");
+  const compileOptions = { baseDir: path.dirname(path.resolve(options.inputPath)) };
   const outputPath = resolveOutputPath(options, source);
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 
@@ -20,10 +21,10 @@ function main() {
     compileNativeExecutable(source, outputPath, options.inputPath);
   } else {
     const output = outputPath.endsWith(".html")
-      ? compileHtml(source)
+      ? compileHtml(source, compileOptions)
       : outputPath.endsWith(".py")
-        ? compileTkinter(source)
-        : compile(source);
+        ? compileTkinter(source, compileOptions)
+        : compile(source, compileOptions);
 
     fs.writeFileSync(outputPath, output);
   }
@@ -134,9 +135,9 @@ function parseArgs(args) {
   return options;
 }
 
-function compile(source) {
+function compile(source, options = {}) {
   const lines = source.split(/\r?\n/);
-  const compiler = new Compiler();
+  const compiler = new Compiler(options);
 
   for (let lineNumber = 0; lineNumber < lines.length; lineNumber += 1) {
     compiler.compileLine(stripComment(lines[lineNumber]).trim(), lineNumber + 1);
@@ -145,19 +146,19 @@ function compile(source) {
   return compiler.finish();
 }
 
-function check(source) {
+function check(source, options = {}) {
   if (needsHtmlOutput(source)) {
-    compileHtml(source);
+    compileHtml(source, options);
   } else {
-    compile(source);
+    compile(source, options);
   }
 
   return [];
 }
 
-function compileHtml(source) {
+function compileHtml(source, options = {}) {
   const lines = source.split(/\r?\n/);
-  const compiler = new HtmlCompiler();
+  const compiler = new HtmlCompiler(options);
 
   for (let lineNumber = 0; lineNumber < lines.length; lineNumber += 1) {
     compiler.compileLine(stripComment(lines[lineNumber]).trim(), lineNumber + 1);
@@ -166,9 +167,9 @@ function compileHtml(source) {
   return compiler.finish();
 }
 
-function compileTkinter(source) {
+function compileTkinter(source, options = {}) {
   const lines = source.split(/\r?\n/);
-  const compiler = new TkinterCompiler();
+  const compiler = new TkinterCompiler(options);
 
   for (let lineNumber = 0; lineNumber < lines.length; lineNumber += 1) {
     compiler.compileLine(stripComment(lines[lineNumber]).trim(), lineNumber + 1);
@@ -180,7 +181,7 @@ function compileTkinter(source) {
 function compileNativeExecutable(source, outputPath, inputPath) {
   const objectiveCPath = getCompilerModulePath(inputPath, outputPath, ".m");
   fs.mkdirSync(path.dirname(objectiveCPath), { recursive: true });
-  fs.writeFileSync(objectiveCPath, compileCocoa(source));
+  fs.writeFileSync(objectiveCPath, compileCocoa(source, { baseDir: path.dirname(path.resolve(inputPath)) }));
 
   const result = childProcess.spawnSync("clang", [
     "-x",
@@ -207,9 +208,9 @@ function getCompilerModulePath(inputPath, outputPath, extension) {
   return path.join("muyecodecmps", "__cmp", sourceName, `${outputName}${extension}`);
 }
 
-function compileCocoa(source) {
+function compileCocoa(source, options = {}) {
   const lines = source.split(/\r?\n/);
-  const compiler = new CocoaCompiler();
+  const compiler = new CocoaCompiler(options);
 
   for (let lineNumber = 0; lineNumber < lines.length; lineNumber += 1) {
     compiler.compileLine(stripComment(lines[lineNumber]).trim(), lineNumber + 1);
@@ -230,7 +231,8 @@ function openFile(filePath) {
 }
 
 class Compiler {
-  constructor() {
+  constructor(options = {}) {
+    this.options = options;
     this.output = [
       "\"use strict\";",
       "",
@@ -269,7 +271,7 @@ class Compiler {
     }
 
     if (rawLine.startsWith("get ")) {
-      compileGet(rawLine, lineNumber);
+      compileGet(rawLine, lineNumber, this.options);
       return;
     }
 
@@ -455,7 +457,8 @@ class Compiler {
 }
 
 class HtmlCompiler {
-  constructor() {
+  constructor(options = {}) {
+    this.options = options;
     this.width = 640;
     this.height = 420;
     this.background = "\"white\"";
@@ -474,7 +477,7 @@ class HtmlCompiler {
     }
 
     if (rawLine.startsWith("get ")) {
-      compileGet(rawLine, lineNumber);
+      compileGet(rawLine, lineNumber, this.options);
       return;
     }
 
@@ -708,7 +711,8 @@ class HtmlCompiler {
 }
 
 class TkinterCompiler {
-  constructor() {
+  constructor(options = {}) {
+    this.options = options;
     this.width = "640";
     this.height = "420";
     this.background = "\"white\"";
@@ -724,7 +728,7 @@ class TkinterCompiler {
     }
 
     if (rawLine.startsWith("get ")) {
-      compileGet(rawLine, lineNumber);
+      compileGet(rawLine, lineNumber, this.options);
       return;
     }
 
@@ -803,7 +807,8 @@ class TkinterCompiler {
 }
 
 class CocoaCompiler {
-  constructor() {
+  constructor(options = {}) {
+    this.options = options;
     this.width = "640";
     this.height = "420";
     this.background = "\"white\"";
@@ -819,7 +824,7 @@ class CocoaCompiler {
     }
 
     if (rawLine.startsWith("get ")) {
-      compileGet(rawLine, lineNumber);
+      compileGet(rawLine, lineNumber, this.options);
       return;
     }
 
@@ -987,18 +992,51 @@ function compileValue(line, lineNumber, keyword) {
   }).join("\n");
 }
 
-function compileGet(line, lineNumber) {
+function compileGet(line, lineNumber, options = {}) {
   const match = line.match(/^get\s+["']([A-Za-z_][A-Za-z0-9_]*)["']$/);
 
   if (!match) {
     throw new Error(`Line ${lineNumber}: expected get "name"`);
   }
 
-  if (!["canvas", "random"].includes(match[1])) {
-    throw new Error(`Line ${lineNumber}: unknown library "${match[1]}"`);
+  const libraryName = match[1];
+  const headerPath = findHeaderPath(libraryName, options.baseDir);
+  const headerSource = fs.readFileSync(headerPath, "utf8");
+  const headerLines = headerSource.split(/\r?\n/);
+
+  for (let index = 0; index < headerLines.length; index += 1) {
+    const headerLine = stripComment(headerLines[index]).trim();
+
+    if (!headerLine) {
+      continue;
+    }
+
+    if (!headerLine.startsWith("declare ")) {
+      throw new Error(`Line ${lineNumber}: ${headerPath} line ${index + 1} must use declare`);
+    }
+
+    compileDeclare(headerLine, index + 1);
   }
 
   return "";
+}
+
+function findHeaderPath(libraryName, baseDir = process.cwd()) {
+  const fileName = `${libraryName}.muyecode`;
+  const candidates = [
+    path.join(baseDir, "lib", fileName),
+    path.join(baseDir, "..", "lib", fileName),
+    path.join(process.cwd(), "lib", fileName),
+    path.join(__dirname, "..", "..", "..", "lib", fileName)
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  throw new Error(`unknown library "${libraryName}"`);
 }
 
 function compileDeclare(line, lineNumber) {
