@@ -273,6 +273,11 @@ class Compiler {
       return;
     }
 
+    if (rawLine.startsWith("declare ")) {
+      compileDeclare(rawLine, lineNumber);
+      return;
+    }
+
     if (rawLine === "else") {
       this.compileElse(lineNumber);
       return;
@@ -470,6 +475,11 @@ class HtmlCompiler {
 
     if (rawLine.startsWith("get ")) {
       compileGet(rawLine, lineNumber);
+      return;
+    }
+
+    if (rawLine.startsWith("declare ")) {
+      compileDeclare(rawLine, lineNumber);
       return;
     }
 
@@ -718,6 +728,11 @@ class TkinterCompiler {
       return;
     }
 
+    if (rawLine.startsWith("declare ")) {
+      compileDeclare(rawLine, lineNumber);
+      return;
+    }
+
     if (rawLine.startsWith("canvas ")) {
       const args = splitCommandArgs(rawLine.slice("canvas ".length).trim());
       this.width = args[0] || this.width;
@@ -805,6 +820,11 @@ class CocoaCompiler {
 
     if (rawLine.startsWith("get ")) {
       compileGet(rawLine, lineNumber);
+      return;
+    }
+
+    if (rawLine.startsWith("declare ")) {
+      compileDeclare(rawLine, lineNumber);
       return;
     }
 
@@ -976,6 +996,16 @@ function compileGet(line, lineNumber) {
 
   if (!["canvas", "random"].includes(match[1])) {
     throw new Error(`Line ${lineNumber}: unknown library "${match[1]}"`);
+  }
+
+  return "";
+}
+
+function compileDeclare(line, lineNumber) {
+  const body = line.slice("declare ".length).trim();
+
+  if (!/^[A-Za-z_][A-Za-z0-9_]*\s*(?:\([^)]*\))?$/.test(body)) {
+    throw new Error(`Line ${lineNumber}: expected declare name or declare name(args)`);
   }
 
   return "";

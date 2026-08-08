@@ -1,8 +1,15 @@
 # Muyecode canvas header
-#
-# Use:
-# get "canvas"
-#
-# Gives canvas programs:
-# canvas, pen, fill, line, rect, box, circle, text, clear
-# wait, sleep, key, pressed
+
+declare canvas(width, height, background)
+declare pen(color, width)
+declare fill(color)
+declare line(x1, y1, x2, y2)
+declare rect(x, y, width, height)
+declare box(x, y, size)
+declare circle(x, y, radius)
+declare text(x, y, message, size)
+declare clear(color)
+declare wait(ms)
+declare sleep(ms)
+declare key(name)
+declare pressed(name)

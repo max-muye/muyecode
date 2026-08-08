@@ -87,6 +87,12 @@ Current headers:
 - `get "canvas"` for canvas, drawing, wait, and keyboard helpers
 - `get "random"` for `random(max)`
 
+Header files use `declare` lines, for example:
+
+```muyecode
+declare random(max)
+```
+
 ## Values
 
 Create values with `value`.

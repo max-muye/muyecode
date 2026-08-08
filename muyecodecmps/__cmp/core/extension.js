@@ -63,6 +63,12 @@ const builtinCompletions = [
     detail: "Use the random library"
   },
   {
+    label: "declare",
+    kind: vscode.CompletionItemKind.Keyword,
+    insertText: "declare ${1:name}(${2:args})",
+    detail: "Declare a header helper"
+  },
+  {
     label: "if",
     kind: vscode.CompletionItemKind.Keyword,
     insertText: "if ${1:condition}\n\t$0\nend",
