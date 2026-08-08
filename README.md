@@ -193,6 +193,17 @@ Run the snake example that imports `get "canvas/gui"`:
 ./muyecodecmp examples/gui_snake.muyecode -o run
 ```
 
+Read GUI input values by putting an id first:
+
+```muyecode
+textbox "name" 24 62 220 30 "Muye"
+checkbox "ready" 24 104 220 28 "Ready" true
+print guivalue("name")
+print guivalue("ready")
+```
+
+There is a complete input example in `examples/gui_inputs.muyecode`.
+
 ## Notes
 
 Compiler outputs are ignored by git. The compiler internals live in:

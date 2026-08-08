@@ -277,31 +277,31 @@ const builtinCompletions = [
   {
     label: "button",
     kind: vscode.CompletionItemKind.Function,
-    insertText: "button ${1:30} ${2:80} ${3:140} ${4:32} ${5:\"Click\"}",
+    insertText: "button ${1:\"go\"} ${2:30} ${3:80} ${4:140} ${5:32} ${6:\"Click\"}",
     detail: "Add a GUI button"
   },
   {
     label: "textbox",
     kind: vscode.CompletionItemKind.Function,
-    insertText: "textbox ${1:30} ${2:130} ${3:220} ${4:28} ${5:\"text\"}",
+    insertText: "textbox ${1:\"name\"} ${2:30} ${3:130} ${4:220} ${5:28} ${6:\"text\"}",
     detail: "Add a GUI text box"
   },
   {
     label: "password",
     kind: vscode.CompletionItemKind.Function,
-    insertText: "password ${1:30} ${2:170} ${3:220} ${4:28} ${5:\"secret\"}",
+    insertText: "password ${1:\"pass\"} ${2:30} ${3:170} ${4:220} ${5:28} ${6:\"secret\"}",
     detail: "Add a password box"
   },
   {
     label: "textarea",
     kind: vscode.CompletionItemKind.Function,
-    insertText: "textarea ${1:30} ${2:210} ${3:320} ${4:90} ${5:\"notes\"}",
+    insertText: "textarea ${1:\"notes\"} ${2:30} ${3:210} ${4:320} ${5:90} ${6:\"notes\"}",
     detail: "Add a multi-line text area"
   },
   {
     label: "checkbox",
     kind: vscode.CompletionItemKind.Function,
-    insertText: "checkbox ${1:30} ${2:320} ${3:180} ${4:28} ${5:\"Check me\"} ${6:false}",
+    insertText: "checkbox ${1:\"ok\"} ${2:30} ${3:320} ${4:180} ${5:28} ${6:\"Check me\"} ${7:false}",
     detail: "Add a checkbox"
   },
   {
@@ -351,6 +351,18 @@ const builtinCompletions = [
     kind: vscode.CompletionItemKind.Function,
     insertText: "image ${1:30} ${2:620} ${3:160} ${4:120} ${5:\"picture.png\"}",
     detail: "Add an image view"
+  },
+  {
+    label: "guivalue",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "guivalue(${1:\"id\"})",
+    detail: "Read a GUI control value by id"
+  },
+  {
+    label: "quit",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "quit()",
+    detail: "Close a canvas/gui window"
   }
 ];
 
@@ -721,7 +733,9 @@ function locationForCompilerBuiltin(name) {
     select: "function compileCocoaDropdown",
     date: "function compileCocoaDate",
     separator: "function compileCocoaSeparator",
-    image: "function compileCocoaImage"
+    image: "function compileCocoaImage",
+    quit: "const quit =",
+    guivalue: "const guivalue ="
   };
 
   return targets[name] ? locationForCompilerPattern(targets[name]) : null;

@@ -446,6 +446,19 @@ GUI commands:
 - `date x y width height`
 - `separator x y width height`
 - `image x y width height path`
+- `quit()`
+- `guivalue(id)`
+
+Input controls can put an id first. Use `guivalue(id)` to read the current value.
+
+```muyecode
+textbox "name" 24 62 220 30 "Muye"
+checkbox "ready" 24 104 220 28 "Ready" true
+
+wait 1000
+print guivalue("name")
+print guivalue("ready")
+```
 
 Files that use `get "canvas/gui"` automatically compile to a native executable when no output filename is provided.
 
@@ -460,6 +473,8 @@ Run it:
 ```sh
 ./muyecodecmp examples/gui_snake.muyecode -o run
 ```
+
+The snake example uses `quit()` so pressing `Q` closes the GUI window.
 
 ## Complete Example
 

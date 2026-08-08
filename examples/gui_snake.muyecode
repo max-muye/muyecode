@@ -57,6 +57,7 @@ class GuiSnakeGame
 
         if pressed("q") || pressed("Q")
             change this.running = false
+            quit()
         end
 
         if pressed("w") || pressed("W") || pressed("ArrowUp")

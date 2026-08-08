@@ -83,6 +83,10 @@ function needsNativeOutput(source) {
   return /(^|\n)\s*window\b/.test(source);
 }
 
+function usesGuiRuntime(source) {
+  return /\b(?:quit|guivalue)\s*\(/.test(source);
+}
+
 function getDefaultExecutablePath(outputDir, sourceName) {
   const preferredPath = path.join(outputDir, sourceName);
 
@@ -193,7 +197,7 @@ function compileTkinter(source, options = {}) {
 function compileNativeExecutable(source, outputPath, inputPath) {
   const objectiveCPath = getCompilerModulePath(inputPath, outputPath, ".m");
   const compileOptions = { baseDir: path.dirname(path.resolve(inputPath)) };
-  const isGuiCanvasApp = sourceImportsCompiler(source, "gui", compileOptions.baseDir) && needsHtmlOutput(source);
+  const isGuiCanvasApp = sourceImportsCompiler(source, "gui", compileOptions.baseDir) && (needsHtmlOutput(source) || usesGuiRuntime(source));
   const objectiveCSource = isGuiCanvasApp ? compileWebViewApp(source, compileOptions) : compileCocoa(source, compileOptions);
   const frameworks = isGuiCanvasApp ? ["Cocoa", "WebKit"] : ["Cocoa"];
   fs.mkdirSync(path.dirname(objectiveCPath), { recursive: true });
@@ -247,9 +251,12 @@ function compileWebViewApp(source, options = {}) {
     "#import <Cocoa/Cocoa.h>",
     "#import <WebKit/WebKit.h>",
     "",
-    "@interface MuyecodeAppDelegate : NSObject <NSApplicationDelegate> @end",
+    "@interface MuyecodeAppDelegate : NSObject <NSApplicationDelegate, WKScriptMessageHandler> @end",
     "@implementation MuyecodeAppDelegate",
     "- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)sender { return YES; }",
+    "- (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message {",
+    "  if ([message.name isEqualToString:@\"muyecodeQuit\"]) [NSApp terminate:nil];",
+    "}",
     "@end",
     "",
     "int main(int argc, const char *argv[]) {",
@@ -260,7 +267,9 @@ function compileWebViewApp(source, options = {}) {
     "    [app setActivationPolicy:NSApplicationActivationPolicyRegular];",
     `    NSWindow *window = [[NSWindow alloc] initWithContentRect:NSMakeRect(100, 100, ${size.width}, ${size.height}) styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable) backing:NSBackingStoreBuffered defer:NO];`,
     "    [window setTitle:@\"Muyecode GUI\"];",
-    "    WKWebView *view = [[WKWebView alloc] initWithFrame:NSMakeRect(0, 0, window.contentView.bounds.size.width, window.contentView.bounds.size.height)];",
+    "    WKWebViewConfiguration *config = [WKWebViewConfiguration new];",
+    "    [config.userContentController addScriptMessageHandler:delegate name:@\"muyecodeQuit\"];",
+    "    WKWebView *view = [[WKWebView alloc] initWithFrame:NSMakeRect(0, 0, window.contentView.bounds.size.width, window.contentView.bounds.size.height) configuration:config];",
     "    [view setAutoresizingMask:(NSViewWidthSizable | NSViewHeightSizable)];",
     "    [window setContentView:view];",
     `    [view loadHTMLString:${objcRawString(html)} baseURL:nil];`,
@@ -612,6 +621,21 @@ class HtmlCompiler {
       return;
     }
 
+    if (rawLine.startsWith("window ")) {
+      this.compileWindow(rawLine);
+      return;
+    }
+
+    if (rawLine.startsWith("background ")) {
+      this.background = rawLine.slice("background ".length).trim() || this.background;
+      return;
+    }
+
+    if (isGuiCommand(rawLine)) {
+      this.pushLine(compileHtmlGuiCommand(rawLine, lineNumber));
+      return;
+    }
+
     if (rawLine.startsWith("if ")) {
       this.compileIf(rawLine);
       return;
@@ -670,6 +694,13 @@ class HtmlCompiler {
     this.width = args[0] || this.width;
     this.height = args[1] || this.height;
     this.background = args[2] || this.background;
+  }
+
+  compileWindow(line) {
+    const args = splitCommandArgs(line.slice("window ".length).trim());
+    this.width = args[0] || this.width;
+    this.height = args[1] || this.height;
+    this.background = args[3] || this.background;
   }
 
   compileIf(line) {
@@ -776,11 +807,16 @@ class HtmlCompiler {
       "  <style>",
       "    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #202124; font-family: Arial, sans-serif; }",
       "    canvas { background: white; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35); }",
+      "    #app { position: relative; }",
+      "    .gui-control { position: absolute; box-sizing: border-box; font-family: Arial, sans-serif; }",
       "  </style>",
       "</head>",
       "<body>",
-      `  <canvas id="screen" width="${stripQuotes(this.width)}" height="${stripQuotes(this.height)}"></canvas>`,
+      "  <div id=\"app\">",
+      `    <canvas id="screen" width="${stripQuotes(this.width)}" height="${stripQuotes(this.height)}"></canvas>`,
+      "  </div>",
       "  <script>",
+      "    const appEl = document.getElementById(\"app\");",
       "    const canvasEl = document.getElementById(\"screen\");",
       "    const ctx = canvasEl.getContext(\"2d\");",
       "    const len = (value) => value.length;",
@@ -789,6 +825,23 @@ class HtmlCompiler {
       "    const print = (...values) => console.log(values.map(str).join(\" \"));",
       "    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));",
       "    const rand = () => Math.floor(Math.random() * 1000000000);",
+      "    const quit = () => { if (window.webkit?.messageHandlers?.muyecodeQuit) window.webkit.messageHandlers.muyecodeQuit.postMessage(\"quit\"); else window.close(); };",
+      "    const guivalue = (id) => {",
+      "      const item = document.getElementById(String(id));",
+      "      if (!item) return null;",
+      "      if (item.type === \"checkbox\" || item.type === \"radio\") return item.checked;",
+      "      if (item.tagName === \"SELECT\") return item.value;",
+      "      return item.value ?? item.textContent;",
+      "    };",
+      "    const guiPlace = (item, id, x, y, width, height) => { item.id = String(id); item.className = \"gui-control\"; item.style.left = x + \"px\"; item.style.top = y + \"px\"; item.style.width = width + \"px\"; item.style.height = height + \"px\"; appEl.appendChild(item); return item; };",
+      "    const guiTextBox = (id, x, y, width, height, value = \"\") => { const item = guiPlace(document.createElement(\"input\"), id, x, y, width, height); item.value = value; return item; };",
+      "    const guiPassword = (id, x, y, width, height, value = \"\") => { const item = guiTextBox(id, x, y, width, height, value); item.type = \"password\"; return item; };",
+      "    const guiTextArea = (id, x, y, width, height, value = \"\") => { const item = guiPlace(document.createElement(\"textarea\"), id, x, y, width, height); item.value = value; return item; };",
+      "    const guiCheckBox = (id, x, y, width, height, text = \"\", checked = false) => { const label = guiPlace(document.createElement(\"label\"), id + \"_label\", x, y, width, height); const item = document.createElement(\"input\"); item.id = String(id); item.type = \"checkbox\"; item.checked = !!checked; label.appendChild(item); label.appendChild(document.createTextNode(\" \" + text)); return item; };",
+      "    const guiButton = (id, x, y, width, height, text = \"Button\") => { const item = guiPlace(document.createElement(\"button\"), id, x, y, width, height); item.textContent = text; return item; };",
+      "    const guiLabel = (id, x, y, width, height, text = \"\", size = 16, bold = false) => { if (typeof size === \"boolean\") { bold = size; size = 16; } const item = guiPlace(document.createElement(\"div\"), id, x, y, width, height); item.textContent = text; item.style.fontSize = size + \"px\"; if (bold) item.style.fontWeight = \"700\"; return item; };",
+      "    const guiSlider = (id, x, y, width, height, min = 0, max = 100, value = 0) => { const item = guiPlace(document.createElement(\"input\"), id, x, y, width, height); item.type = \"range\"; item.min = min; item.max = max; item.value = value; return item; };",
+      "    const guiDropdown = (id, x, y, width, height, ...items) => { const item = guiPlace(document.createElement(\"select\"), id, x, y, width, height); for (const text of items) { const option = document.createElement(\"option\"); option.value = text; option.textContent = text; item.appendChild(option); } return item; };",
       "    const push = (list, value) => list.push(value);",
       "    const removefirst = (list) => list.shift();",
       "    const keys = {};",
@@ -840,7 +893,7 @@ class TkinterCompiler {
     }
 
     if (rawLine.startsWith("get ")) {
-      this.imports.add(compileGet(rawLine, lineNumber, this.options).name);
+      this.importHeader(compileGet(rawLine, lineNumber, this.options));
       return;
     }
 
@@ -1108,6 +1161,14 @@ class CocoaCompiler {
     throw new Error(`Line ${lineNumber}: native exec output supports drawing commands, got "${rawLine}"`);
   }
 
+  importHeader(header) {
+    this.imports.add(header.name);
+
+    for (const line of header.lines) {
+      this.compileLine(line.text, line.lineNumber);
+    }
+  }
+
   finish() {
     const width = stripQuotes(this.width);
     const height = stripQuotes(this.height);
@@ -1219,10 +1280,12 @@ function compileCocoaLabel(line, lineNumber, index) {
 
 function compileCocoaButton(line, lineNumber, index) {
   const args = splitCommandArgs(line.slice("button ".length).trim());
-  requireArgCount("button", args, 5, lineNumber);
+  const guiArgs = parseGuiIdArgs("button", args, 5, lineNumber);
+  const realArgs = guiArgs.args;
   return [
-    `NSButton *button${index} = [NSButton buttonWithTitle:${objcString(args[4])} target:nil action:nil];`,
-    `[button${index} setFrame:NSMakeRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})];`,
+    `NSButton *button${index} = [NSButton buttonWithTitle:${objcString(realArgs[4])} target:nil action:nil];`,
+    `[button${index} setIdentifier:${objcString(guiArgs.id)}];`,
+    `[button${index} setFrame:NSMakeRect(${realArgs[0]}, ${realArgs[1]}, ${realArgs[2]}, ${realArgs[3]})];`,
     `[button${index} setBezelStyle:NSBezelStyleRounded];`,
     `[contentView addSubview:button${index}];`
   ].join("\n");
@@ -1231,24 +1294,29 @@ function compileCocoaButton(line, lineNumber, index) {
 function compileCocoaTextBox(line, lineNumber, index) {
   const command = line.startsWith("inputbox ") ? "inputbox" : line.startsWith("password ") ? "password" : "textbox";
   const args = splitCommandArgs(line.slice(`${command} `.length).trim());
-  requireArgCount(command, args, 5, lineNumber);
+  const guiArgs = parseGuiIdArgs(command, args, 5, lineNumber);
   const type = command === "password" ? "NSSecureTextField" : "NSTextField";
+  const realArgs = guiArgs.args;
   return [
-    `${type} *textbox${index} = [[${type} alloc] initWithFrame:NSMakeRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})];`,
-    `[textbox${index} setStringValue:${objcString(args[4])}];`,
+    `${type} *textbox${index} = [[${type} alloc] initWithFrame:NSMakeRect(${realArgs[0]}, ${realArgs[1]}, ${realArgs[2]}, ${realArgs[3]})];`,
+    `[textbox${index} setIdentifier:${objcString(guiArgs.id)}];`,
+    `[textbox${index} setStringValue:${objcString(realArgs[4])}];`,
     `[contentView addSubview:textbox${index}];`
   ].join("\n");
 }
 
 function compileCocoaTextArea(line, lineNumber, index) {
   const args = splitCommandArgs(line.slice("textarea ".length).trim());
-  requireArgCount("textarea", args, 5, lineNumber);
+  const guiArgs = parseGuiIdArgs("textarea", args, 5, lineNumber);
+  const realArgs = guiArgs.args;
   return [
-    `NSScrollView *scroll${index} = [[NSScrollView alloc] initWithFrame:NSMakeRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})];`,
+    `NSScrollView *scroll${index} = [[NSScrollView alloc] initWithFrame:NSMakeRect(${realArgs[0]}, ${realArgs[1]}, ${realArgs[2]}, ${realArgs[3]})];`,
+    `[scroll${index} setIdentifier:${objcString(`${stripQuotes(guiArgs.id)}_scroll`)}];`,
     `[scroll${index} setBorderType:NSBezelBorder];`,
     `[scroll${index} setHasVerticalScroller:YES];`,
-    `NSTextView *textarea${index} = [[NSTextView alloc] initWithFrame:NSMakeRect(0, 0, ${args[2]}, ${args[3]})];`,
-    `[textarea${index} setString:${objcString(args[4])}];`,
+    `NSTextView *textarea${index} = [[NSTextView alloc] initWithFrame:NSMakeRect(0, 0, ${realArgs[2]}, ${realArgs[3]})];`,
+    `[textarea${index} setIdentifier:${objcString(guiArgs.id)}];`,
+    `[textarea${index} setString:${objcString(realArgs[4])}];`,
     `[scroll${index} setDocumentView:textarea${index}];`,
     `[contentView addSubview:scroll${index}];`
   ].join("\n");
@@ -1257,25 +1325,29 @@ function compileCocoaTextArea(line, lineNumber, index) {
 function compileCocoaChoice(line, lineNumber, index) {
   const command = line.match(/^([A-Za-z_][A-Za-z0-9_]*)/)[1];
   const args = splitCommandArgs(line.slice(`${command} `.length).trim());
-  requireArgCount(command, args, 5, lineNumber);
+  const guiArgs = parseGuiIdArgs(command, args, 6, lineNumber);
+  const realArgs = guiArgs.args;
   const buttonType = command === "radio" ? "NSButtonTypeRadio" : command === "switch" ? "NSButtonTypeSwitch" : "NSButtonTypeSwitch";
   return [
-    `NSButton *choice${index} = [NSButton checkboxWithTitle:${objcString(args[4])} target:nil action:nil];`,
-    `[choice${index} setFrame:NSMakeRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})];`,
+    `NSButton *choice${index} = [NSButton checkboxWithTitle:${objcString(realArgs[4])} target:nil action:nil];`,
+    `[choice${index} setIdentifier:${objcString(guiArgs.id)}];`,
+    `[choice${index} setFrame:NSMakeRect(${realArgs[0]}, ${realArgs[1]}, ${realArgs[2]}, ${realArgs[3]})];`,
     `[choice${index} setButtonType:${buttonType}];`,
-    `[choice${index} setState:${truthy(args[5]) ? "NSControlStateValueOn" : "NSControlStateValueOff"}];`,
+    `[choice${index} setState:${truthy(realArgs[5]) ? "NSControlStateValueOn" : "NSControlStateValueOff"}];`,
     `[contentView addSubview:choice${index}];`
   ].join("\n");
 }
 
 function compileCocoaSlider(line, lineNumber, index) {
   const args = splitCommandArgs(line.slice("slider ".length).trim());
-  requireArgCount("slider", args, 7, lineNumber);
+  const guiArgs = parseGuiIdArgs("slider", args, 7, lineNumber);
+  const realArgs = guiArgs.args;
   return [
-    `NSSlider *slider${index} = [[NSSlider alloc] initWithFrame:NSMakeRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})];`,
-    `[slider${index} setMinValue:${args[4]}];`,
-    `[slider${index} setMaxValue:${args[5]}];`,
-    `[slider${index} setDoubleValue:${args[6]}];`,
+    `NSSlider *slider${index} = [[NSSlider alloc] initWithFrame:NSMakeRect(${realArgs[0]}, ${realArgs[1]}, ${realArgs[2]}, ${realArgs[3]})];`,
+    `[slider${index} setIdentifier:${objcString(guiArgs.id)}];`,
+    `[slider${index} setMinValue:${realArgs[4]}];`,
+    `[slider${index} setMaxValue:${realArgs[5]}];`,
+    `[slider${index} setDoubleValue:${realArgs[6]}];`,
     `[contentView addSubview:slider${index}];`
   ].join("\n");
 }
@@ -1296,10 +1368,12 @@ function compileCocoaProgress(line, lineNumber, index) {
 function compileCocoaDropdown(line, lineNumber, index) {
   const command = line.startsWith("select ") ? "select" : "dropdown";
   const args = splitCommandArgs(line.slice(`${command} `.length).trim());
-  requireArgCount(command, args, 5, lineNumber);
-  const items = args.slice(4).map((item) => objcString(item)).join(", ");
+  const guiArgs = parseGuiIdArgs(command, args, 5, lineNumber);
+  const realArgs = guiArgs.args;
+  const items = realArgs.slice(4).map((item) => objcString(item)).join(", ");
   return [
-    `NSPopUpButton *dropdown${index} = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}) pullsDown:NO];`,
+    `NSPopUpButton *dropdown${index} = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(${realArgs[0]}, ${realArgs[1]}, ${realArgs[2]}, ${realArgs[3]}) pullsDown:NO];`,
+    `[dropdown${index} setIdentifier:${objcString(guiArgs.id)}];`,
     `[dropdown${index} addItemsWithTitles:@[${items}]];`,
     `[contentView addSubview:dropdown${index}];`
   ].join("\n");
@@ -1467,6 +1541,10 @@ function assertImports(line, lineNumber, imports) {
 }
 
 function usesGuiLibrary(line) {
+  return isGuiCommand(line) || /\b(?:quit|guivalue)\s*\(/.test(line);
+}
+
+function isGuiCommand(line) {
   return /^(window|title|background|heading|label|button|textbox|inputbox|password|textarea|checkbox|switch|radio|slider|progress|dropdown|select|date|separator|image)\b/.test(line);
 }
 
@@ -1672,6 +1750,76 @@ function compileCanvasDrawingCommand(line, lineNumber) {
   }
 
   throw new Error(`Line ${lineNumber}: unknown drawing command "${command}"`);
+}
+
+function compileHtmlGuiCommand(line, lineNumber) {
+  const match = line.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*(.*)$/);
+
+  if (!match) {
+    throw new Error(`Line ${lineNumber}: invalid GUI command`);
+  }
+
+  const command = match[1];
+  const args = splitCommandArgs(match[2].trim());
+
+  if (command === "title" || command === "background" || command === "window") {
+    return "";
+  }
+
+  if (command === "label" || command === "heading") {
+    const guiArgs = parseGuiIdArgs(command, args, 5, lineNumber);
+    return `guiLabel(${guiArgs.id}, ${guiArgs.args.join(", ")}, ${command === "heading"});`;
+  }
+
+  if (command === "textbox" || command === "inputbox") {
+    const guiArgs = parseGuiIdArgs(command, args, 5, lineNumber);
+    return `guiTextBox(${guiArgs.id}, ${guiArgs.args.join(", ")});`;
+  }
+
+  if (command === "password") {
+    const guiArgs = parseGuiIdArgs(command, args, 5, lineNumber);
+    return `guiPassword(${guiArgs.id}, ${guiArgs.args.join(", ")});`;
+  }
+
+  if (command === "textarea") {
+    const guiArgs = parseGuiIdArgs(command, args, 5, lineNumber);
+    return `guiTextArea(${guiArgs.id}, ${guiArgs.args.join(", ")});`;
+  }
+
+  if (command === "checkbox" || command === "switch" || command === "radio") {
+    const guiArgs = parseGuiIdArgs(command, args, 6, lineNumber);
+    return `guiCheckBox(${guiArgs.id}, ${guiArgs.args.join(", ")});`;
+  }
+
+  if (command === "button") {
+    const guiArgs = parseGuiIdArgs(command, args, 5, lineNumber);
+    return `guiButton(${guiArgs.id}, ${guiArgs.args.join(", ")});`;
+  }
+
+  if (command === "slider") {
+    const guiArgs = parseGuiIdArgs(command, args, 7, lineNumber);
+    return `guiSlider(${guiArgs.id}, ${guiArgs.args.join(", ")});`;
+  }
+
+  if (command === "dropdown" || command === "select") {
+    const guiArgs = parseGuiIdArgs(command, args, 5, lineNumber);
+    return `guiDropdown(${guiArgs.id}, ${guiArgs.args.join(", ")});`;
+  }
+
+  return "";
+}
+
+function parseGuiIdArgs(command, args, count, lineNumber) {
+  requireArgCount(command, args, count, lineNumber);
+  const firstArgIsId = isQuoted(args[0]) && args.length >= count + 1;
+  const id = firstArgIsId ? args[0] : `"${command}${lineNumber}"`;
+  const realArgs = firstArgIsId ? args.slice(1) : args;
+  requireArgCount(command, realArgs, count, lineNumber);
+  return { id, args: realArgs };
+}
+
+function isQuoted(value) {
+  return /^["'].*["']$/.test(String(value));
 }
 
 function stripComment(line) {
