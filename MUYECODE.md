@@ -75,6 +75,7 @@ Use `get` to say which helpers your program uses.
 get "canvas"
 get "random"
 get "time"
+get "gui"
 ```
 
 Headers live in:
@@ -88,6 +89,7 @@ Current headers:
 - `get "canvas"` for canvas, drawing, and keyboard helpers
 - `get "random"` for `rand()`, `rand_int(min, max)`, and `rand_double(min, max)`
 - `get "time"` for `wait(ms)` and header-made `sleep(s)`
+- `get "gui"` for native macOS GUI windows
 
 Header files use `cmp` to say which compiler helper they enable. Use `declare` only for helpers provided by the compiler; functions written in the header do not need `declare`.
 
@@ -400,6 +402,35 @@ Run the snake example:
 ```
 
 Files that use `canvas`, `wait`, `sleep`, `key(...)`, or `pressed(...)` automatically compile to a canvas window when no output filename is provided.
+
+## GUI Windows
+
+Use `get "gui"` to create a real macOS app window.
+
+```muyecode
+get "gui"
+
+window 420 260 "Muyecode GUI" "white"
+label 30 30 330 34 "Hello from a real GUI window" 22
+textbox 30 82 240 28 "type here"
+button 30 130 130 34 "OK"
+```
+
+Run it:
+
+```sh
+./muyecodecmp examples/gui.muyecode -o run
+```
+
+GUI commands:
+
+- `window width height title background`
+- `label x y width height text size`
+- `button x y width height text`
+- `textbox x y width height text`
+- `inputbox x y width height text`
+
+Files that use `get "gui"` automatically compile to a native executable when no output filename is provided.
 
 ## Complete Example
 

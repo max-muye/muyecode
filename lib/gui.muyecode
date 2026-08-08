@@ -1,0 +1,9 @@
+# Muyecode native GUI header
+
+cmp "gui"
+
+declare window(width, height, title)
+declare label(x, y, width, height, text, size)
+declare button(x, y, width, height, text)
+declare textbox(x, y, width, height, text)
+declare inputbox(x, y, width, height, text)

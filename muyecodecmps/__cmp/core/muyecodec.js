@@ -66,11 +66,20 @@ function resolveOutputPath(options, source = "") {
     return getDefaultExecutablePath(outputDir, sourceName);
   }
 
+  if (needsNativeOutput(source)) {
+    options.makeExecutable = true;
+    return getDefaultExecutablePath(outputDir, sourceName);
+  }
+
   return path.join(outputDir, `${sourceName}${needsHtmlOutput(source) ? ".html" : ".js"}`);
 }
 
 function needsHtmlOutput(source) {
   return /(^|\n)\s*(?:canvas|wait)\b/.test(source) || /(^|\n)\s*get\s+["'](?:canvas|time)["']/.test(source) || /\b(?:key|pressed)\s*\(/.test(source);
+}
+
+function needsNativeOutput(source) {
+  return /(^|\n)\s*get\s+["']gui["']/.test(source) || /(^|\n)\s*window\b/.test(source);
 }
 
 function getDefaultExecutablePath(outputDir, sourceName) {
@@ -147,7 +156,9 @@ function compile(source, options = {}) {
 }
 
 function check(source, options = {}) {
-  if (needsHtmlOutput(source)) {
+  if (needsNativeOutput(source)) {
+    compileCocoa(source, options);
+  } else if (needsHtmlOutput(source)) {
     compileHtml(source, options);
   } else {
     compile(source, options);
@@ -881,11 +892,13 @@ class CocoaCompiler {
     this.imports = new Set();
     this.width = "640";
     this.height = "420";
+    this.title = "\"Muyecode\"";
     this.background = "\"white\"";
     this.penColor = "\"black\"";
     this.fillColor = "\"clear\"";
     this.penWidth = "2";
     this.drawLines = [];
+    this.controlLines = [];
   }
 
   compileLine(rawLine, lineNumber) {
@@ -914,6 +927,34 @@ class CocoaCompiler {
       this.width = args[0] || this.width;
       this.height = args[1] || this.height;
       this.background = args[2] || this.background;
+      return;
+    }
+
+    if (rawLine.startsWith("window ")) {
+      assertImports(rawLine, lineNumber, this.imports);
+      const args = splitCommandArgs(rawLine.slice("window ".length).trim());
+      this.width = args[0] || this.width;
+      this.height = args[1] || this.height;
+      this.title = args[2] || this.title;
+      this.background = args[3] || this.background;
+      return;
+    }
+
+    if (rawLine.startsWith("label ")) {
+      assertImports(rawLine, lineNumber, this.imports);
+      this.controlLines.push(compileCocoaLabel(rawLine, lineNumber, this.controlLines.length));
+      return;
+    }
+
+    if (rawLine.startsWith("button ")) {
+      assertImports(rawLine, lineNumber, this.imports);
+      this.controlLines.push(compileCocoaButton(rawLine, lineNumber, this.controlLines.length));
+      return;
+    }
+
+    if (rawLine.startsWith("textbox ") || rawLine.startsWith("inputbox ")) {
+      assertImports(rawLine, lineNumber, this.imports);
+      this.controlLines.push(compileCocoaTextBox(rawLine, lineNumber, this.controlLines.length));
       return;
     }
 
@@ -1041,8 +1082,10 @@ class CocoaCompiler {
       "    [app setDelegate:delegate];",
       "    [app setActivationPolicy:NSApplicationActivationPolicyRegular];",
       `    NSWindow *window = [[NSWindow alloc] initWithContentRect:NSMakeRect(100, 100, ${width}, ${height}) styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable) backing:NSBackingStoreBuffered defer:NO];`,
-      "    [window setTitle:@\"Muyecode\"];",
-      "    [window setContentView:[[MuyecodeView alloc] initWithFrame:NSMakeRect(0, 0, window.contentView.bounds.size.width, window.contentView.bounds.size.height)]];",
+      `    [window setTitle:${objcString(this.title)}];`,
+      "    MuyecodeView *contentView = [[MuyecodeView alloc] initWithFrame:NSMakeRect(0, 0, window.contentView.bounds.size.width, window.contentView.bounds.size.height)];",
+      "    [window setContentView:contentView];",
+      ...this.controlLines.flatMap((line) => line.split("\n").map((part) => `    ${part}`)),
       "    [window makeKeyAndOrderFront:nil];",
       "    [app activateIgnoringOtherApps:YES];",
       "    [app run];",
@@ -1051,6 +1094,46 @@ class CocoaCompiler {
       "}",
       ""
     ].join("\n");
+  }
+}
+
+function compileCocoaLabel(line, lineNumber, index) {
+  const args = splitCommandArgs(line.slice("label ".length).trim());
+  requireArgCount("label", args, 5, lineNumber);
+  const size = args[5] || "18";
+  return [
+    `NSTextField *label${index} = [NSTextField labelWithString:${objcString(args[4])}];`,
+    `[label${index} setFrame:NSMakeRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})];`,
+    `[label${index} setFont:[NSFont systemFontOfSize:${size}]];`,
+    `[contentView addSubview:label${index}];`
+  ].join("\n");
+}
+
+function compileCocoaButton(line, lineNumber, index) {
+  const args = splitCommandArgs(line.slice("button ".length).trim());
+  requireArgCount("button", args, 5, lineNumber);
+  return [
+    `NSButton *button${index} = [NSButton buttonWithTitle:${objcString(args[4])} target:nil action:nil];`,
+    `[button${index} setFrame:NSMakeRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})];`,
+    `[button${index} setBezelStyle:NSBezelStyleRounded];`,
+    `[contentView addSubview:button${index}];`
+  ].join("\n");
+}
+
+function compileCocoaTextBox(line, lineNumber, index) {
+  const command = line.startsWith("inputbox ") ? "inputbox" : "textbox";
+  const args = splitCommandArgs(line.slice(`${command} `.length).trim());
+  requireArgCount(command, args, 5, lineNumber);
+  return [
+    `NSTextField *textbox${index} = [[NSTextField alloc] initWithFrame:NSMakeRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})];`,
+    `[textbox${index} setStringValue:${objcString(args[4])}];`,
+    `[contentView addSubview:textbox${index}];`
+  ].join("\n");
+}
+
+function requireArgCount(command, args, count, lineNumber) {
+  if (args.length < count) {
+    throw new Error(`Line ${lineNumber}: ${command} needs ${count} values`);
   }
 }
 
@@ -1116,6 +1199,10 @@ function compileGet(line, lineNumber, options = {}) {
 }
 
 function assertImports(line, lineNumber, imports) {
+  if (usesGuiLibrary(line) && !imports.has("gui")) {
+    throw new Error(`Line ${lineNumber}: use get "gui" before GUI helpers`);
+  }
+
   if (usesCanvasLibrary(line) && !imports.has("canvas")) {
     throw new Error(`Line ${lineNumber}: use get "canvas" before canvas helpers`);
   }
@@ -1127,6 +1214,10 @@ function assertImports(line, lineNumber, imports) {
   if (usesRandomLibrary(line) && !imports.has("random")) {
     throw new Error(`Line ${lineNumber}: use get "random" before random helpers`);
   }
+}
+
+function usesGuiLibrary(line) {
+  return /^(window|label|button|textbox|inputbox)\b/.test(line);
 }
 
 function usesCanvasLibrary(line) {

@@ -71,6 +71,12 @@ const builtinCompletions = [
     detail: "Use the time library"
   },
   {
+    label: "get gui",
+    kind: vscode.CompletionItemKind.Module,
+    insertText: "get \"gui\"",
+    detail: "Use the native GUI library"
+  },
+  {
     label: "cmp",
     kind: vscode.CompletionItemKind.Keyword,
     insertText: "cmp \"${1:name}\"",
@@ -267,6 +273,30 @@ const builtinCompletions = [
     kind: vscode.CompletionItemKind.Function,
     insertText: "rand_double(${1:min}, ${2:max})",
     detail: "Random decimal from min to max"
+  },
+  {
+    label: "window",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "window ${1:400} ${2:260} ${3:\"My App\"}",
+    detail: "Create a native GUI window"
+  },
+  {
+    label: "label",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "label ${1:30} ${2:30} ${3:240} ${4:30} ${5:\"Hello\"} ${6:18}",
+    detail: "Add GUI text"
+  },
+  {
+    label: "button",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "button ${1:30} ${2:80} ${3:140} ${4:32} ${5:\"Click\"}",
+    detail: "Add a GUI button"
+  },
+  {
+    label: "textbox",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "textbox ${1:30} ${2:130} ${3:220} ${4:28} ${5:\"text\"}",
+    detail: "Add a GUI text box"
   }
 ];
 
@@ -596,7 +626,8 @@ function locationForCompiler(name) {
   const targets = {
     canvas: "function usesCanvasLibrary",
     random: "const rand =",
-    time: "const wait ="
+    time: "const wait =",
+    gui: "function usesGuiLibrary"
   };
 
   return locationForCompilerPattern(targets[name] || "function compileCmp");
@@ -616,7 +647,12 @@ function locationForCompilerBuiltin(name) {
     text: "function compileCanvasDrawingCommand",
     clear: "function compileCanvasDrawingCommand",
     key: "const key =",
-    pressed: "const pressed ="
+    pressed: "const pressed =",
+    window: "rawLine.startsWith(\"window \")",
+    label: "function compileCocoaLabel",
+    button: "function compileCocoaButton",
+    textbox: "function compileCocoaTextBox",
+    inputbox: "function compileCocoaTextBox"
   };
 
   return targets[name] ? locationForCompilerPattern(targets[name]) : null;

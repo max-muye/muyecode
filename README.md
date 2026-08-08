@@ -16,6 +16,7 @@ It includes:
 - JavaScript output
 - canvas window output for programs that use `canvas`, `key(...)`, `pressed(...)`, and time helpers
 - native macOS drawing executable output
+- native macOS GUI window output
 
 ## Get It
 
@@ -157,6 +158,27 @@ The full snake example is in:
 ```text
 examples/snake.muyecode
 ```
+
+## Native GUI Window
+
+Create a simple GUI app with `get "gui"`:
+
+```muyecode
+get "gui"
+
+window 420 260 "Muyecode GUI" "white"
+label 30 30 330 34 "Hello from a real GUI window" 22
+textbox 30 82 240 28 "type here"
+button 30 130 130 34 "OK"
+```
+
+Build and run it:
+
+```sh
+./muyecodecmp examples/gui.muyecode -o run
+```
+
+That creates a real macOS executable in `muyecodecmps/`.
 
 ## Notes
 
