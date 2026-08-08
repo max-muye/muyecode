@@ -2,6 +2,8 @@
 *.muyecode
 !examples/
 !examples/*.muyecode
+!games/
+!games/*.muyecode
 !lib/
 !lib/*.muyecode
 !lib/**/*.muyecode

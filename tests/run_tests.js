@@ -19,8 +19,8 @@ function run(command, args) {
   return result.stdout.trim();
 }
 
-function compile(example) {
-  return run(compiler, [path.join("examples", example)]);
+function compile(filePath) {
+  return run(compiler, [filePath]);
 }
 
 function assertFile(filePath, pattern, message) {
@@ -31,19 +31,19 @@ function assertFile(filePath, pattern, message) {
 run("node", ["--check", "muyecodecmps/__cmp/core/muyecodec.js"]);
 run("node", ["--check", "muyecodecmps/__cmp/core/extension.js"]);
 
-compile("poker.muyecode");
-compile("gui_snake.muyecode");
-compile("gui_inputs.muyecode");
-compile("snake.muyecode");
+compile(path.join("games", "poker.muyecode"));
+compile(path.join("examples", "gui_snake.muyecode"));
+compile(path.join("examples", "gui_inputs.muyecode"));
+compile(path.join("examples", "snake.muyecode"));
 
 assert.strictEqual(fs.existsSync(path.join(root, "muyecodecmps", "poker")), true, "poker native executable should exist");
 assert.strictEqual(fs.existsSync(path.join(root, "muyecodecmps", "gui_snake")), true, "gui snake native executable should exist");
 assert.strictEqual(fs.existsSync(path.join(root, "muyecodecmps", "snake.html")), true, "plain snake html should exist");
 
-assertFile("examples/poker.muyecode", /Royal Flush/, "poker should include Royal Flush scoring");
-assertFile("examples/poker.muyecode", /Straight Flush/, "poker should include Straight Flush scoring");
-assertFile("examples/poker.muyecode", /Four of a Kind/, "poker should include Four of a Kind scoring");
-assertFile("examples/poker.muyecode", /Full House/, "poker should include Full House scoring");
-assertFile("examples/poker.muyecode", /pressed\("q"\)/, "poker should support Q quit");
+assertFile("games/poker.muyecode", /Royal Flush/, "poker should include Royal Flush scoring");
+assertFile("games/poker.muyecode", /Straight Flush/, "poker should include Straight Flush scoring");
+assertFile("games/poker.muyecode", /Four of a Kind/, "poker should include Four of a Kind scoring");
+assertFile("games/poker.muyecode", /Full House/, "poker should include Full House scoring");
+assertFile("games/poker.muyecode", /pressed\("q"\)/, "poker should support Q quit");
 
 console.log("All Muyecode tests passed.");

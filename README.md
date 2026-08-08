@@ -161,10 +161,10 @@ examples/snake.muyecode
 
 ## Poker Game
 
-Run the video poker example:
+Run the video poker game:
 
 ```sh
-./muyecodecmp examples/poker.muyecode -o run
+./muyecodecmp games/poker.muyecode -o run
 ```
 
 Controls:
