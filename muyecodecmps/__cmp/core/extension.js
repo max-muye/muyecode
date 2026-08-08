@@ -263,6 +263,12 @@ const builtinCompletions = [
     detail: "Create a native GUI window"
   },
   {
+    label: "heading",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "heading ${1:30} ${2:24} ${3:300} ${4:36} ${5:\"Title\"} ${6:26}",
+    detail: "Add large GUI text"
+  },
+  {
     label: "label",
     kind: vscode.CompletionItemKind.Function,
     insertText: "label ${1:30} ${2:30} ${3:240} ${4:30} ${5:\"Hello\"} ${6:18}",
@@ -279,6 +285,72 @@ const builtinCompletions = [
     kind: vscode.CompletionItemKind.Function,
     insertText: "textbox ${1:30} ${2:130} ${3:220} ${4:28} ${5:\"text\"}",
     detail: "Add a GUI text box"
+  },
+  {
+    label: "password",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "password ${1:30} ${2:170} ${3:220} ${4:28} ${5:\"secret\"}",
+    detail: "Add a password box"
+  },
+  {
+    label: "textarea",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "textarea ${1:30} ${2:210} ${3:320} ${4:90} ${5:\"notes\"}",
+    detail: "Add a multi-line text area"
+  },
+  {
+    label: "checkbox",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "checkbox ${1:30} ${2:320} ${3:180} ${4:28} ${5:\"Check me\"} ${6:false}",
+    detail: "Add a checkbox"
+  },
+  {
+    label: "switch",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "switch ${1:30} ${2:360} ${3:180} ${4:28} ${5:\"Enabled\"} ${6:true}",
+    detail: "Add a switch"
+  },
+  {
+    label: "radio",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "radio ${1:30} ${2:400} ${3:180} ${4:28} ${5:\"Choice\"} ${6:false}",
+    detail: "Add a radio button"
+  },
+  {
+    label: "slider",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "slider ${1:30} ${2:440} ${3:220} ${4:28} ${5:0} ${6:100} ${7:50}",
+    detail: "Add a slider"
+  },
+  {
+    label: "progress",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "progress ${1:30} ${2:480} ${3:220} ${4:18} ${5:0} ${6:100} ${7:50}",
+    detail: "Add a progress bar"
+  },
+  {
+    label: "dropdown",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "dropdown ${1:30} ${2:520} ${3:180} ${4:30} ${5:\"One\"} ${6:\"Two\"}",
+    detail: "Add a dropdown menu"
+  },
+  {
+    label: "date",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "date ${1:30} ${2:560} ${3:180} ${4:28}",
+    detail: "Add a date picker"
+  },
+  {
+    label: "separator",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "separator ${1:30} ${2:600} ${3:300} ${4:1}",
+    detail: "Add a separator line"
+  },
+  {
+    label: "image",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "image ${1:30} ${2:620} ${3:160} ${4:120} ${5:\"picture.png\"}",
+    detail: "Add an image view"
   }
 ];
 
@@ -631,10 +703,25 @@ function locationForCompilerBuiltin(name) {
     key: "const key =",
     pressed: "const pressed =",
     window: "rawLine.startsWith(\"window \")",
+    title: "rawLine.startsWith(\"title \")",
+    background: "rawLine.startsWith(\"background \")",
+    heading: "function compileCocoaLabel",
     label: "function compileCocoaLabel",
     button: "function compileCocoaButton",
     textbox: "function compileCocoaTextBox",
-    inputbox: "function compileCocoaTextBox"
+    inputbox: "function compileCocoaTextBox",
+    password: "function compileCocoaTextBox",
+    textarea: "function compileCocoaTextArea",
+    checkbox: "function compileCocoaChoice",
+    switch: "function compileCocoaChoice",
+    radio: "function compileCocoaChoice",
+    slider: "function compileCocoaSlider",
+    progress: "function compileCocoaProgress",
+    dropdown: "function compileCocoaDropdown",
+    select: "function compileCocoaDropdown",
+    date: "function compileCocoaDate",
+    separator: "function compileCocoaSeparator",
+    image: "function compileCocoaImage"
   };
 
   return targets[name] ? locationForCompilerPattern(targets[name]) : null;

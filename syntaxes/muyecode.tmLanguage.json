@@ -83,7 +83,7 @@
         },
         {
           "name": "support.function.builtin.muyecode",
-          "match": "\\b(?:print|say|input|len|str|num|rand|rand_int|rand_double|key|pressed|push|removefirst|openfile|writefile|appendfile|canvas|pen|fill|line|rect|box|circle|text|clear|wait|sleep|window|label|button|textbox|inputbox)\\b"
+          "match": "\\b(?:print|say|input|len|str|num|rand|rand_int|rand_double|key|pressed|push|removefirst|openfile|writefile|appendfile|canvas|pen|fill|line|rect|box|circle|text|clear|wait|sleep|window|title|background|heading|label|button|textbox|inputbox|password|textarea|checkbox|switch|radio|slider|progress|dropdown|select|date|separator|image)\\b"
         },
         {
           "name": "constant.language.boolean.muyecode",
@@ -194,7 +194,7 @@
       "patterns": [
         {
           "name": "variable.other.readwrite.muyecode",
-          "match": "\\b(?!(?:value|let|set|change|function|class|method|get|cmp|declare|if|else|while|for|return|end|this|new|print|say|input|len|str|num|rand|rand_int|rand_double|key|pressed|push|removefirst|openfile|writefile|appendfile|canvas|pen|fill|line|rect|box|circle|text|clear|wait|sleep|window|label|button|textbox|inputbox|true|false|null)\\b)[A-Za-z_][A-Za-z0-9_]*\\b"
+          "match": "\\b(?!(?:value|let|set|change|function|class|method|get|cmp|declare|if|else|while|for|return|end|this|new|print|say|input|len|str|num|rand|rand_int|rand_double|key|pressed|push|removefirst|openfile|writefile|appendfile|canvas|pen|fill|line|rect|box|circle|text|clear|wait|sleep|window|title|background|heading|label|button|textbox|inputbox|password|textarea|checkbox|switch|radio|slider|progress|dropdown|select|date|separator|image|true|false|null)\\b)[A-Za-z_][A-Za-z0-9_]*\\b"
         }
       ]
     },

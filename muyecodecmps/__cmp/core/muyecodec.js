@@ -940,7 +940,19 @@ class CocoaCompiler {
       return;
     }
 
-    if (rawLine.startsWith("label ")) {
+    if (rawLine.startsWith("title ")) {
+      assertImports(rawLine, lineNumber, this.imports);
+      this.title = rawLine.slice("title ".length).trim() || this.title;
+      return;
+    }
+
+    if (rawLine.startsWith("background ")) {
+      assertImports(rawLine, lineNumber, this.imports);
+      this.background = rawLine.slice("background ".length).trim() || this.background;
+      return;
+    }
+
+    if (rawLine.startsWith("label ") || rawLine.startsWith("heading ")) {
       assertImports(rawLine, lineNumber, this.imports);
       this.controlLines.push(compileCocoaLabel(rawLine, lineNumber, this.controlLines.length));
       return;
@@ -952,9 +964,57 @@ class CocoaCompiler {
       return;
     }
 
-    if (rawLine.startsWith("textbox ") || rawLine.startsWith("inputbox ")) {
+    if (rawLine.startsWith("textbox ") || rawLine.startsWith("inputbox ") || rawLine.startsWith("password ")) {
       assertImports(rawLine, lineNumber, this.imports);
       this.controlLines.push(compileCocoaTextBox(rawLine, lineNumber, this.controlLines.length));
+      return;
+    }
+
+    if (rawLine.startsWith("textarea ")) {
+      assertImports(rawLine, lineNumber, this.imports);
+      this.controlLines.push(compileCocoaTextArea(rawLine, lineNumber, this.controlLines.length));
+      return;
+    }
+
+    if (rawLine.startsWith("checkbox ") || rawLine.startsWith("switch ") || rawLine.startsWith("radio ")) {
+      assertImports(rawLine, lineNumber, this.imports);
+      this.controlLines.push(compileCocoaChoice(rawLine, lineNumber, this.controlLines.length));
+      return;
+    }
+
+    if (rawLine.startsWith("slider ")) {
+      assertImports(rawLine, lineNumber, this.imports);
+      this.controlLines.push(compileCocoaSlider(rawLine, lineNumber, this.controlLines.length));
+      return;
+    }
+
+    if (rawLine.startsWith("progress ")) {
+      assertImports(rawLine, lineNumber, this.imports);
+      this.controlLines.push(compileCocoaProgress(rawLine, lineNumber, this.controlLines.length));
+      return;
+    }
+
+    if (rawLine.startsWith("dropdown ") || rawLine.startsWith("select ")) {
+      assertImports(rawLine, lineNumber, this.imports);
+      this.controlLines.push(compileCocoaDropdown(rawLine, lineNumber, this.controlLines.length));
+      return;
+    }
+
+    if (rawLine.startsWith("date ")) {
+      assertImports(rawLine, lineNumber, this.imports);
+      this.controlLines.push(compileCocoaDate(rawLine, lineNumber, this.controlLines.length));
+      return;
+    }
+
+    if (rawLine.startsWith("separator ")) {
+      assertImports(rawLine, lineNumber, this.imports);
+      this.controlLines.push(compileCocoaSeparator(rawLine, lineNumber, this.controlLines.length));
+      return;
+    }
+
+    if (rawLine.startsWith("image ")) {
+      assertImports(rawLine, lineNumber, this.imports);
+      this.controlLines.push(compileCocoaImage(rawLine, lineNumber, this.controlLines.length));
       return;
     }
 
@@ -1098,13 +1158,17 @@ class CocoaCompiler {
 }
 
 function compileCocoaLabel(line, lineNumber, index) {
-  const args = splitCommandArgs(line.slice("label ".length).trim());
+  const command = line.startsWith("heading ") ? "heading" : "label";
+  const args = splitCommandArgs(line.slice(`${command} `.length).trim());
   requireArgCount("label", args, 5, lineNumber);
-  const size = args[5] || "18";
+  const size = args[5] || (command === "heading" ? "26" : "18");
+  const weightLine = command === "heading"
+    ? `[label${index} setFont:[NSFont boldSystemFontOfSize:${size}]];`
+    : `[label${index} setFont:[NSFont systemFontOfSize:${size}]];`;
   return [
     `NSTextField *label${index} = [NSTextField labelWithString:${objcString(args[4])}];`,
     `[label${index} setFrame:NSMakeRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})];`,
-    `[label${index} setFont:[NSFont systemFontOfSize:${size}]];`,
+    weightLine,
     `[contentView addSubview:label${index}];`
   ].join("\n");
 }
@@ -1121,13 +1185,110 @@ function compileCocoaButton(line, lineNumber, index) {
 }
 
 function compileCocoaTextBox(line, lineNumber, index) {
-  const command = line.startsWith("inputbox ") ? "inputbox" : "textbox";
+  const command = line.startsWith("inputbox ") ? "inputbox" : line.startsWith("password ") ? "password" : "textbox";
   const args = splitCommandArgs(line.slice(`${command} `.length).trim());
   requireArgCount(command, args, 5, lineNumber);
+  const type = command === "password" ? "NSSecureTextField" : "NSTextField";
   return [
-    `NSTextField *textbox${index} = [[NSTextField alloc] initWithFrame:NSMakeRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})];`,
+    `${type} *textbox${index} = [[${type} alloc] initWithFrame:NSMakeRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})];`,
     `[textbox${index} setStringValue:${objcString(args[4])}];`,
     `[contentView addSubview:textbox${index}];`
+  ].join("\n");
+}
+
+function compileCocoaTextArea(line, lineNumber, index) {
+  const args = splitCommandArgs(line.slice("textarea ".length).trim());
+  requireArgCount("textarea", args, 5, lineNumber);
+  return [
+    `NSScrollView *scroll${index} = [[NSScrollView alloc] initWithFrame:NSMakeRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})];`,
+    `[scroll${index} setBorderType:NSBezelBorder];`,
+    `[scroll${index} setHasVerticalScroller:YES];`,
+    `NSTextView *textarea${index} = [[NSTextView alloc] initWithFrame:NSMakeRect(0, 0, ${args[2]}, ${args[3]})];`,
+    `[textarea${index} setString:${objcString(args[4])}];`,
+    `[scroll${index} setDocumentView:textarea${index}];`,
+    `[contentView addSubview:scroll${index}];`
+  ].join("\n");
+}
+
+function compileCocoaChoice(line, lineNumber, index) {
+  const command = line.match(/^([A-Za-z_][A-Za-z0-9_]*)/)[1];
+  const args = splitCommandArgs(line.slice(`${command} `.length).trim());
+  requireArgCount(command, args, 5, lineNumber);
+  const buttonType = command === "radio" ? "NSButtonTypeRadio" : command === "switch" ? "NSButtonTypeSwitch" : "NSButtonTypeSwitch";
+  return [
+    `NSButton *choice${index} = [NSButton checkboxWithTitle:${objcString(args[4])} target:nil action:nil];`,
+    `[choice${index} setFrame:NSMakeRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})];`,
+    `[choice${index} setButtonType:${buttonType}];`,
+    `[choice${index} setState:${truthy(args[5]) ? "NSControlStateValueOn" : "NSControlStateValueOff"}];`,
+    `[contentView addSubview:choice${index}];`
+  ].join("\n");
+}
+
+function compileCocoaSlider(line, lineNumber, index) {
+  const args = splitCommandArgs(line.slice("slider ".length).trim());
+  requireArgCount("slider", args, 7, lineNumber);
+  return [
+    `NSSlider *slider${index} = [[NSSlider alloc] initWithFrame:NSMakeRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})];`,
+    `[slider${index} setMinValue:${args[4]}];`,
+    `[slider${index} setMaxValue:${args[5]}];`,
+    `[slider${index} setDoubleValue:${args[6]}];`,
+    `[contentView addSubview:slider${index}];`
+  ].join("\n");
+}
+
+function compileCocoaProgress(line, lineNumber, index) {
+  const args = splitCommandArgs(line.slice("progress ".length).trim());
+  requireArgCount("progress", args, 7, lineNumber);
+  return [
+    `NSProgressIndicator *progress${index} = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})];`,
+    `[progress${index} setIndeterminate:NO];`,
+    `[progress${index} setMinValue:${args[4]}];`,
+    `[progress${index} setMaxValue:${args[5]}];`,
+    `[progress${index} setDoubleValue:${args[6]}];`,
+    `[contentView addSubview:progress${index}];`
+  ].join("\n");
+}
+
+function compileCocoaDropdown(line, lineNumber, index) {
+  const command = line.startsWith("select ") ? "select" : "dropdown";
+  const args = splitCommandArgs(line.slice(`${command} `.length).trim());
+  requireArgCount(command, args, 5, lineNumber);
+  const items = args.slice(4).map((item) => objcString(item)).join(", ");
+  return [
+    `NSPopUpButton *dropdown${index} = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]}) pullsDown:NO];`,
+    `[dropdown${index} addItemsWithTitles:@[${items}]];`,
+    `[contentView addSubview:dropdown${index}];`
+  ].join("\n");
+}
+
+function compileCocoaDate(line, lineNumber, index) {
+  const args = splitCommandArgs(line.slice("date ".length).trim());
+  requireArgCount("date", args, 4, lineNumber);
+  return [
+    `NSDatePicker *date${index} = [[NSDatePicker alloc] initWithFrame:NSMakeRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})];`,
+    `[date${index} setDatePickerStyle:NSDatePickerStyleTextFieldAndStepper];`,
+    `[contentView addSubview:date${index}];`
+  ].join("\n");
+}
+
+function compileCocoaSeparator(line, lineNumber, index) {
+  const args = splitCommandArgs(line.slice("separator ".length).trim());
+  requireArgCount("separator", args, 4, lineNumber);
+  return [
+    `NSBox *separator${index} = [[NSBox alloc] initWithFrame:NSMakeRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})];`,
+    `[separator${index} setBoxType:NSBoxSeparator];`,
+    `[contentView addSubview:separator${index}];`
+  ].join("\n");
+}
+
+function compileCocoaImage(line, lineNumber, index) {
+  const args = splitCommandArgs(line.slice("image ".length).trim());
+  requireArgCount("image", args, 5, lineNumber);
+  return [
+    `NSImageView *image${index} = [[NSImageView alloc] initWithFrame:NSMakeRect(${args[0]}, ${args[1]}, ${args[2]}, ${args[3]})];`,
+    `[image${index} setImage:[[NSImage alloc] initWithContentsOfFile:${objcString(args[4])}]];`,
+    `[image${index} setImageScaling:NSImageScaleProportionallyUpOrDown];`,
+    `[contentView addSubview:image${index}];`
   ].join("\n");
 }
 
@@ -1135,6 +1296,10 @@ function requireArgCount(command, args, count, lineNumber) {
   if (args.length < count) {
     throw new Error(`Line ${lineNumber}: ${command} needs ${count} values`);
   }
+}
+
+function truthy(value) {
+  return value === "true" || value === "1" || value === "\"true\"" || value === "'true'";
 }
 
 
@@ -1222,7 +1387,7 @@ function assertImports(line, lineNumber, imports) {
 }
 
 function usesGuiLibrary(line) {
-  return /^(window|label|button|textbox|inputbox)\b/.test(line);
+  return /^(window|title|background|heading|label|button|textbox|inputbox|password|textarea|checkbox|switch|radio|slider|progress|dropdown|select|date|separator|image)\b/.test(line);
 }
 
 function usesCanvasLibrary(line) {

@@ -1,6 +1,26 @@
 get "canvas/gui"
 
-window 420 260 "Muyecode GUI" "white"
-label 30 30 330 34 "Hello from a real GUI window" 22
-textbox 30 82 240 28 "type here"
-button 30 130 130 34 "OK"
+window 560 520 "Muyecode GUI" "#f8fafc"
+heading 28 24 360 36 "Muyecode Native GUI" 26
+label 30 72 420 24 "Controls are real macOS controls, not a web page." 15
+separator 30 110 500 1
+
+label 30 135 120 24 "Name" 14
+textbox 150 132 210 28 "Muye"
+button 375 130 120 32 "Say Hi"
+
+label 30 180 120 24 "Password" 14
+password 150 177 210 28 "secret"
+
+checkbox 30 225 190 28 "Enable sound" true
+switch 250 225 170 28 "Dark mode" false
+radio 30 262 170 28 "Choice A" true
+radio 210 262 170 28 "Choice B" false
+
+label 30 310 120 24 "Speed" 14
+slider 150 306 250 28 0 100 60
+progress 150 342 250 18 0 100 60
+
+dropdown 30 382 180 30 "Small" "Medium" "Large"
+date 235 382 190 28
+textarea 30 430 470 60 "Write notes here"

@@ -405,10 +405,17 @@ Use `get "canvas/gui"` to create a real macOS app window.
 ```muyecode
 get "canvas/gui"
 
-window 420 260 "Muyecode GUI" "white"
-label 30 30 330 34 "Hello from a real GUI window" 22
-textbox 30 82 240 28 "type here"
-button 30 130 130 34 "OK"
+window 560 520 "Muyecode GUI" "#f8fafc"
+heading 28 24 360 36 "Muyecode Native GUI" 26
+label 30 72 420 24 "Controls are real macOS controls, not a web page." 15
+separator 30 110 500 1
+textbox 150 132 210 28 "Muye"
+button 375 130 120 32 "Say Hi"
+checkbox 30 225 190 28 "Enable sound" true
+slider 150 306 250 28 0 100 60
+progress 150 342 250 18 0 100 60
+dropdown 30 382 180 30 "Small" "Medium" "Large"
+textarea 30 430 470 60 "Write notes here"
 ```
 
 Run it:
@@ -420,10 +427,25 @@ Run it:
 GUI commands:
 
 - `window width height title background`
+- `title text`
+- `background color`
+- `heading x y width height text size`
 - `label x y width height text size`
 - `button x y width height text`
 - `textbox x y width height text`
 - `inputbox x y width height text`
+- `password x y width height text`
+- `textarea x y width height text`
+- `checkbox x y width height text checked`
+- `switch x y width height text checked`
+- `radio x y width height text checked`
+- `slider x y width height min max value`
+- `progress x y width height min max value`
+- `dropdown x y width height item1 item2 ...`
+- `select x y width height item1 item2 ...`
+- `date x y width height`
+- `separator x y width height`
+- `image x y width height path`
 
 Files that use `get "canvas/gui"` automatically compile to a native executable when no output filename is provided.
 
