@@ -70,7 +70,7 @@ function resolveOutputPath(options, source = "") {
 }
 
 function needsHtmlOutput(source) {
-  return /(^|\n)\s*(?:canvas|wait|sleep)\b/.test(source) || /(^|\n)\s*get\s+["']canvas["']/.test(source) || /\b(?:key|pressed)\s*\(/.test(source);
+  return /(^|\n)\s*(?:canvas|wait)\b/.test(source) || /(^|\n)\s*get\s+["'](?:canvas|time)["']/.test(source) || /\b(?:key|pressed)\s*\(/.test(source);
 }
 
 function getDefaultExecutablePath(outputDir, sourceName) {
@@ -423,6 +423,13 @@ class Compiler {
       throw new Error(`Line ${lineNumber}: expected method name(arg1, arg2)`);
     }
 
+    if (!this.isDirectlyInClass()) {
+      this.pushLine(`function ${match[1]}(${match[2]}) {`);
+      this.blockStack.push({ type: "function", lineNumber });
+      this.indent += 1;
+      return;
+    }
+
     const name = match[1] === "init" ? "constructor" : match[1];
     this.pushLine(`${name}(${match[2]}) {`);
     this.blockStack.push({ type: "method", lineNumber });
@@ -540,7 +547,7 @@ class HtmlCompiler {
       return;
     }
 
-    if (rawLine.startsWith("wait ") || rawLine.startsWith("sleep ")) {
+    if (rawLine.startsWith("wait ")) {
       this.pushLine(compileWait(rawLine));
       return;
     }
@@ -655,6 +662,13 @@ class HtmlCompiler {
       throw new Error(`Line ${lineNumber}: expected method name(arg1, arg2)`);
     }
 
+    if (!this.isDirectlyInClass()) {
+      this.pushLine(`async function ${match[1]}(${match[2]}) {`);
+      this.blockStack.push("function");
+      this.indent += 1;
+      return;
+    }
+
     const name = match[1] === "init" ? "constructor" : match[1] === "run" ? "async run" : match[1];
     this.pushLine(`${name}(${match[2]}) {`);
     this.blockStack.push("method");
@@ -708,7 +722,7 @@ class HtmlCompiler {
       "    const str = (value) => String(value);",
       "    const num = (value) => Number(value);",
       "    const print = (...values) => console.log(values.map(str).join(\" \"));",
-      "    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));",
+      "    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));",
       "    const rand = () => Math.floor(Math.random() * 1000000000);",
       "    const push = (list, value) => list.push(value);",
       "    const removefirst = (list) => list.shift();",
@@ -1097,7 +1111,7 @@ function assertImports(line, lineNumber, imports) {
   }
 
   if (usesTimeLibrary(line) && !imports.has("time")) {
-    throw new Error(`Line ${lineNumber}: use get "time" before wait/sleep`);
+    throw new Error(`Line ${lineNumber}: use get "time" before wait`);
   }
 
   if (usesRandomLibrary(line) && !imports.has("random")) {
@@ -1110,7 +1124,7 @@ function usesCanvasLibrary(line) {
 }
 
 function usesTimeLibrary(line) {
-  return /^(wait|sleep)\b/.test(line);
+  return /^wait\b/.test(line);
 }
 
 function usesRandomLibrary(line) {
@@ -1207,8 +1221,8 @@ function compileReturn(line) {
 }
 
 function compileWait(line) {
-  const body = line.replace(/^(wait|sleep)\s+/, "").trim();
-  return `await sleep(${body});`;
+  const body = line.replace(/^wait\s+/, "").trim();
+  return `await wait(${body});`;
 }
 
 function isDrawingCommand(line) {

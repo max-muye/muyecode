@@ -3,4 +3,7 @@
 cmp "time"
 
 declare wait(ms)
-declare sleep(ms)
+
+method sleep(s)
+    wait s * 1000
+end

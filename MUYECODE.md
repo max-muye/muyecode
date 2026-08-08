@@ -87,7 +87,7 @@ Current headers:
 
 - `get "canvas"` for canvas, drawing, and keyboard helpers
 - `get "random"` for `rand()`, `rand_int(min, max)`, and `rand_double(min, max)`
-- `get "time"` for `wait(ms)` and `sleep(ms)`
+- `get "time"` for `wait(ms)` and header-made `sleep(s)`
 
 Header files use `cmp` to say which compiler helper they enable. Use `declare` only for helpers provided by the compiler; functions written in the header do not need `declare`.
 
