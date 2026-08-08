@@ -1,5 +1,7 @@
 # Muyecode native GUI header
 
+get "canvas/html"
+
 cmp "gui"
 
 declare window(width, height, title)

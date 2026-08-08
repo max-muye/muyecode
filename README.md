@@ -187,6 +187,12 @@ Build and run it:
 
 That creates a real macOS executable in `muyecodecmps/`.
 
+Run the snake example that imports `get "canvas/gui"`:
+
+```sh
+./muyecodecmp examples/gui_snake.muyecode -o run
+```
+
 ## Notes
 
 Compiler outputs are ignored by git. The compiler internals live in:

@@ -449,6 +449,18 @@ GUI commands:
 
 Files that use `get "canvas/gui"` automatically compile to a native executable when no output filename is provided.
 
+Snake can be written in Muyecode source instead of hidden in the compiler. See:
+
+```text
+examples/gui_snake.muyecode
+```
+
+Run it:
+
+```sh
+./muyecodecmp examples/gui_snake.muyecode -o run
+```
+
 ## Complete Example
 
 ```muyecode
