@@ -79,7 +79,7 @@
         },
         {
           "name": "storage.type.muyecode",
-          "match": "\\b(?:value|let|set|change|function|class|method)\\b"
+          "match": "\\b(?:value|let|set|change|function|class|method|get)\\b"
         },
         {
           "name": "support.function.builtin.muyecode",
@@ -194,7 +194,7 @@
       "patterns": [
         {
           "name": "variable.other.readwrite.muyecode",
-          "match": "\\b(?!(?:value|let|set|change|function|class|method|if|else|while|for|return|end|this|new|print|say|input|len|str|num|random|key|pressed|push|removefirst|openfile|writefile|appendfile|canvas|pen|fill|line|rect|box|circle|text|clear|wait|sleep|true|false|null)\\b)[A-Za-z_][A-Za-z0-9_]*\\b"
+          "match": "\\b(?!(?:value|let|set|change|function|class|method|get|if|else|while|for|return|end|this|new|print|say|input|len|str|num|random|key|pressed|push|removefirst|openfile|writefile|appendfile|canvas|pen|fill|line|rect|box|circle|text|clear|wait|sleep|true|false|null)\\b)[A-Za-z_][A-Za-z0-9_]*\\b"
         }
       ]
     },

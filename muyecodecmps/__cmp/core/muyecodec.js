@@ -69,7 +69,7 @@ function resolveOutputPath(options, source = "") {
 }
 
 function needsHtmlOutput(source) {
-  return /(^|\n)\s*(?:canvas|wait|sleep)\b/.test(source) || /\b(?:key|pressed)\s*\(/.test(source);
+  return /(^|\n)\s*(?:canvas|wait|sleep)\b/.test(source) || /(^|\n)\s*get\s+["']canvas["']/.test(source) || /\b(?:key|pressed)\s*\(/.test(source);
 }
 
 function getDefaultExecutablePath(outputDir, sourceName) {
@@ -242,6 +242,7 @@ class Compiler {
       "const len = (value) => value.length;",
       "const str = (value) => String(value);",
       "const num = (value) => Number(value);",
+      "const random = (max) => Math.floor(Math.random() * max);",
       "const openfile = (filePath) => require(\"fs\").readFileSync(filePath, \"utf8\");",
       "const writefile = (filePath, content) => require(\"fs\").writeFileSync(filePath, String(content));",
       "const appendfile = (filePath, content) => require(\"fs\").appendFileSync(filePath, String(content));",
@@ -264,6 +265,11 @@ class Compiler {
     this.currentLineNumber = lineNumber;
 
     if (!rawLine) {
+      return;
+    }
+
+    if (rawLine.startsWith("get ")) {
+      compileGet(rawLine, lineNumber);
       return;
     }
 
@@ -459,6 +465,11 @@ class HtmlCompiler {
 
   compileLine(rawLine, lineNumber) {
     if (!rawLine) {
+      return;
+    }
+
+    if (rawLine.startsWith("get ")) {
+      compileGet(rawLine, lineNumber);
       return;
     }
 
@@ -702,6 +713,11 @@ class TkinterCompiler {
       return;
     }
 
+    if (rawLine.startsWith("get ")) {
+      compileGet(rawLine, lineNumber);
+      return;
+    }
+
     if (rawLine.startsWith("canvas ")) {
       const args = splitCommandArgs(rawLine.slice("canvas ".length).trim());
       this.width = args[0] || this.width;
@@ -784,6 +800,11 @@ class CocoaCompiler {
 
   compileLine(rawLine, lineNumber) {
     if (!rawLine) {
+      return;
+    }
+
+    if (rawLine.startsWith("get ")) {
+      compileGet(rawLine, lineNumber);
       return;
     }
 
@@ -944,6 +965,20 @@ function compileValue(line, lineNumber, keyword) {
 
     return `${keyword} ${match[1]} = ${match[2]};`;
   }).join("\n");
+}
+
+function compileGet(line, lineNumber) {
+  const match = line.match(/^get\s+["']([A-Za-z_][A-Za-z0-9_]*)["']$/);
+
+  if (!match) {
+    throw new Error(`Line ${lineNumber}: expected get "name"`);
+  }
+
+  if (!["canvas", "random"].includes(match[1])) {
+    throw new Error(`Line ${lineNumber}: unknown library "${match[1]}"`);
+  }
+
+  return "";
 }
 
 function compileClassValue(line, lineNumber) {

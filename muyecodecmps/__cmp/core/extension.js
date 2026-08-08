@@ -51,6 +51,18 @@ const builtinCompletions = [
     detail: "Create an object"
   },
   {
+    label: "get canvas",
+    kind: vscode.CompletionItemKind.Module,
+    insertText: "get \"canvas\"",
+    detail: "Use the canvas library"
+  },
+  {
+    label: "get random",
+    kind: vscode.CompletionItemKind.Module,
+    insertText: "get \"random\"",
+    detail: "Use the random library"
+  },
+  {
     label: "if",
     kind: vscode.CompletionItemKind.Keyword,
     insertText: "if ${1:condition}\n\t$0\nend",

@@ -1,0 +1,8 @@
+# Muyecode canvas header
+#
+# Use:
+# get "canvas"
+#
+# Gives canvas programs:
+# canvas, pen, fill, line, rect, box, circle, text, clear
+# wait, sleep, key, pressed

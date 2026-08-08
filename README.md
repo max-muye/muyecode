@@ -10,6 +10,7 @@ It includes:
 - auto indentation for blocks
 - automatic `end` insertion after block lines
 - error checking in VS Code Problems
+- small headers in `lib`, used with lines like `get "canvas"`
 - a compiler command: `./muyecodecmp`
 - classes and simpler aliases like `let`, `say`, and `change`
 - JavaScript output
@@ -95,6 +96,8 @@ Choose an output name:
 Create `drawing.muyecode`:
 
 ```muyecode
+get "canvas"
+
 canvas 500 320 "white"
 fill "#dff7ff"
 pen "#2563eb" 4
@@ -115,6 +118,9 @@ Build a real macOS executable:
 For movement or animation, make your own class and use `while true` with `wait`.
 
 ```muyecode
+get "canvas"
+get "random"
+
 canvas 400 400 "black"
 
 class SnakeGame

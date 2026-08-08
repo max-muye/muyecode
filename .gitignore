@@ -2,6 +2,8 @@
 *.muyecode
 !examples/
 !examples/*.muyecode
+!lib/
+!lib/*.muyecode
 mcmp
 
 # Compiler outputs

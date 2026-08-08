@@ -67,6 +67,26 @@ Use `#` for comments.
 value name = "Muye"
 ```
 
+## Headers
+
+Use `get` to say which helpers your program uses.
+
+```muyecode
+get "canvas"
+get "random"
+```
+
+Headers live in:
+
+```text
+lib/
+```
+
+Current headers:
+
+- `get "canvas"` for canvas, drawing, wait, and keyboard helpers
+- `get "random"` for `random(max)`
+
 ## Values
 
 Create values with `value`.
@@ -258,6 +278,8 @@ Muyecode can make simple SVG drawings.
 Start with `canvas`, then draw shapes.
 
 ```muyecode
+get "canvas"
+
 canvas 500 320 "white"
 
 fill "#dff7ff"
@@ -329,6 +351,9 @@ Useful commands:
 Example:
 
 ```muyecode
+get "canvas"
+get "random"
+
 canvas 400 400 "black"
 class SnakeGame
     value x = 200

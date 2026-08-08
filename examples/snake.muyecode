@@ -1,3 +1,6 @@
+get "canvas"
+get "random"
+
 canvas 400 400 "black"
 
 class SnakeGame
