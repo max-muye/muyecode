@@ -87,9 +87,10 @@ Current headers:
 - `get "canvas"` for canvas, drawing, wait, and keyboard helpers
 - `get "random"` for `random(max)`
 
-Header files use `declare` lines, for example:
+Header files use `cmp` to say which compiler helper they enable, then `declare` lines for the names:
 
 ```muyecode
+cmp "random"
 declare random(max)
 ```
 

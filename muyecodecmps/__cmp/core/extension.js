@@ -63,6 +63,12 @@ const builtinCompletions = [
     detail: "Use the random library"
   },
   {
+    label: "cmp",
+    kind: vscode.CompletionItemKind.Keyword,
+    insertText: "cmp \"${1:name}\"",
+    detail: "Set the compiler helper for a header"
+  },
+  {
     label: "declare",
     kind: vscode.CompletionItemKind.Keyword,
     insertText: "declare ${1:name}(${2:args})",

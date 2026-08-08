@@ -1,5 +1,7 @@
 # Muyecode canvas header
 
+cmp "canvas"
+
 declare canvas(width, height, background)
 declare pen(color, width)
 declare fill(color)

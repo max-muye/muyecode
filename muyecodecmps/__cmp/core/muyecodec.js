@@ -281,6 +281,11 @@ class Compiler {
       return;
     }
 
+    if (rawLine.startsWith("cmp ")) {
+      compileCmp(rawLine, lineNumber);
+      return;
+    }
+
     if (rawLine === "else") {
       this.compileElse(lineNumber);
       return;
@@ -487,6 +492,11 @@ class HtmlCompiler {
 
     if (rawLine.startsWith("declare ")) {
       compileDeclare(rawLine, lineNumber);
+      return;
+    }
+
+    if (rawLine.startsWith("cmp ")) {
+      compileCmp(rawLine, lineNumber);
       return;
     }
 
@@ -744,6 +754,11 @@ class TkinterCompiler {
       return;
     }
 
+    if (rawLine.startsWith("cmp ")) {
+      compileCmp(rawLine, lineNumber);
+      return;
+    }
+
     if (rawLine.startsWith("canvas ")) {
       assertImports(rawLine, lineNumber, this.imports);
       const args = splitCommandArgs(rawLine.slice("canvas ".length).trim());
@@ -845,6 +860,11 @@ class CocoaCompiler {
 
     if (rawLine.startsWith("declare ")) {
       compileDeclare(rawLine, lineNumber);
+      return;
+    }
+
+    if (rawLine.startsWith("cmp ")) {
+      compileCmp(rawLine, lineNumber);
       return;
     }
 
@@ -1025,6 +1045,7 @@ function compileGet(line, lineNumber, options = {}) {
   const headerPath = findHeaderPath(libraryName, options.baseDir);
   const headerSource = fs.readFileSync(headerPath, "utf8");
   const headerLines = headerSource.split(/\r?\n/);
+  let compilerName = null;
 
   for (let index = 0; index < headerLines.length; index += 1) {
     const headerLine = stripComment(headerLines[index]).trim();
@@ -1033,11 +1054,20 @@ function compileGet(line, lineNumber, options = {}) {
       continue;
     }
 
+    if (headerLine.startsWith("cmp ")) {
+      compilerName = compileCmp(headerLine, index + 1);
+      continue;
+    }
+
     if (!headerLine.startsWith("declare ")) {
-      throw new Error(`Line ${lineNumber}: ${headerPath} line ${index + 1} must use declare`);
+      throw new Error(`Line ${lineNumber}: ${headerPath} line ${index + 1} must use cmp or declare`);
     }
 
     compileDeclare(headerLine, index + 1);
+  }
+
+  if (compilerName !== libraryName) {
+    throw new Error(`Line ${lineNumber}: ${headerPath} must include cmp "${libraryName}"`);
   }
 
   return libraryName;
@@ -1087,6 +1117,16 @@ function compileDeclare(line, lineNumber) {
   }
 
   return "";
+}
+
+function compileCmp(line, lineNumber) {
+  const match = line.match(/^cmp\s+["']([A-Za-z_][A-Za-z0-9_]*)["']$/);
+
+  if (!match) {
+    throw new Error(`Line ${lineNumber}: expected cmp "name"`);
+  }
+
+  return match[1];
 }
 
 function compileClassValue(line, lineNumber) {

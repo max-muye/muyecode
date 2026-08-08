@@ -2,6 +2,7 @@
   "files.associations": {
     "*.muyecode": "muyecode"
   },
+  "editor.minimap.enabled": false,
   "editor.tokenColorCustomizations": {
     "textMateRules": [
       {

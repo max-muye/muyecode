@@ -1,3 +1,5 @@
 # Muyecode random header
 
+cmp "random"
+
 declare random(max)
