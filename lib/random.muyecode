@@ -3,8 +3,6 @@
 cmp "random"
 
 declare rand()
-declare rand_int(min, max)
-declare rand_double(min, max)
 
 function rand_int(min, max)
     return min + rand() % (max - min + 1)

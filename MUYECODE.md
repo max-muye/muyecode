@@ -89,11 +89,15 @@ Current headers:
 - `get "random"` for `rand()`, `rand_int(min, max)`, and `rand_double(min, max)`
 - `get "time"` for `wait(ms)` and `sleep(ms)`
 
-Header files use `cmp` to say which compiler helper they enable, then `declare` lines for the names:
+Header files use `cmp` to say which compiler helper they enable. Use `declare` only for helpers provided by the compiler; functions written in the header do not need `declare`.
 
 ```muyecode
 cmp "random"
 declare rand()
+
+function rand_int(min, max)
+    return min + rand() % (max - min + 1)
+end
 ```
 
 ## Values
