@@ -53,28 +53,10 @@ const builtinCompletions = [
     detail: "Create an object"
   },
   {
-    label: "get canvas",
+    label: "get",
     kind: vscode.CompletionItemKind.Module,
-    insertText: "get \"canvas\"",
-    detail: "Use the canvas library"
-  },
-  {
-    label: "get random",
-    kind: vscode.CompletionItemKind.Module,
-    insertText: "get \"random\"",
-    detail: "Use the random library"
-  },
-  {
-    label: "get time",
-    kind: vscode.CompletionItemKind.Module,
-    insertText: "get \"time\"",
-    detail: "Use the time library"
-  },
-  {
-    label: "get gui",
-    kind: vscode.CompletionItemKind.Module,
-    insertText: "get \"gui\"",
-    detail: "Use the native GUI library"
+    insertText: "get \"${1:module}\"",
+    detail: "Import a module"
   },
   {
     label: "cmp",

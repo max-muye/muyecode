@@ -69,7 +69,7 @@ value name = "Muye"
 
 ## Headers
 
-Use `get` to say which helpers your program uses.
+Use `get` to import module files.
 
 ```muyecode
 get "canvas"
@@ -78,20 +78,13 @@ get "time"
 get "canvas/gui"
 ```
 
-Headers live in:
+Modules live in:
 
 ```text
 lib/
 ```
 
-Current headers:
-
-- `get "canvas"` for canvas, drawing, and keyboard helpers
-- `get "random"` for `rand()`, `rand_int(min, max)`, and `rand_double(min, max)`
-- `get "time"` for `wait(ms)` and header-made `sleep(s)`
-- `get "canvas/gui"` for native macOS GUI windows
-
-Header files can use `cmp` as an optional check for which compiler helper they enable. `get "random"` already turns on the random compiler helper because it loads `lib/random.muyecode`, and `get "canvas/gui"` turns on the GUI helper because it loads `lib/canvas/gui.muyecode`.
+Module files can use `cmp` when they need compiler-backed commands. For example, a module that says `cmp "canvas"` turns on canvas commands, and a module that says `cmp "gui"` turns on GUI commands.
 
 Use `declare` only for helpers provided by the compiler; functions written in the header do not need `declare`.
 

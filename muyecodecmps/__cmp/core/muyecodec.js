@@ -75,11 +75,11 @@ function resolveOutputPath(options, source = "") {
 }
 
 function needsHtmlOutput(source) {
-  return /(^|\n)\s*(?:canvas|wait)\b/.test(source) || /(^|\n)\s*get\s+["'](?:canvas|time)["']/.test(source) || /\b(?:key|pressed)\s*\(/.test(source);
+  return /(^|\n)\s*(?:canvas|wait)\b/.test(source) || /\b(?:key|pressed)\s*\(/.test(source);
 }
 
 function needsNativeOutput(source) {
-  return /(^|\n)\s*get\s+["'](?:[A-Za-z_][A-Za-z0-9_]*\/)*gui["']/.test(source) || /(^|\n)\s*window\b/.test(source);
+  return /(^|\n)\s*window\b/.test(source);
 }
 
 function getDefaultExecutablePath(outputDir, sourceName) {
@@ -1205,19 +1205,19 @@ function getLibraryCompilerName(libraryPath, lineNumber) {
 
 function assertImports(line, lineNumber, imports) {
   if (usesGuiLibrary(line) && !imports.has("gui")) {
-    throw new Error(`Line ${lineNumber}: use get "gui" before GUI helpers`);
+    throw new Error(`Line ${lineNumber}: import a module with cmp "gui" before GUI helpers`);
   }
 
   if (usesCanvasLibrary(line) && !imports.has("canvas")) {
-    throw new Error(`Line ${lineNumber}: use get "canvas" before canvas helpers`);
+    throw new Error(`Line ${lineNumber}: import a module with cmp "canvas" before canvas helpers`);
   }
 
   if (usesTimeLibrary(line) && !imports.has("time")) {
-    throw new Error(`Line ${lineNumber}: use get "time" before wait`);
+    throw new Error(`Line ${lineNumber}: import a module with cmp "time" before wait`);
   }
 
   if (usesRandomLibrary(line) && !imports.has("random")) {
-    throw new Error(`Line ${lineNumber}: use get "random" before random helpers`);
+    throw new Error(`Line ${lineNumber}: import a module with cmp "random" before random helpers`);
   }
 }
 
