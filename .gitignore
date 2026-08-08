@@ -15,6 +15,7 @@ muyecodecmps/*
 
 # Generated native/browser/script outputs
 *.html
+*.vsix
 *_exec
 *.m
 
