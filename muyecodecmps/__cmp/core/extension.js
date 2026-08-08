@@ -63,6 +63,12 @@ const builtinCompletions = [
     detail: "Use the random library"
   },
   {
+    label: "get time",
+    kind: vscode.CompletionItemKind.Module,
+    insertText: "get \"time\"",
+    detail: "Use the time library"
+  },
+  {
     label: "cmp",
     kind: vscode.CompletionItemKind.Keyword,
     insertText: "cmp \"${1:name}\"",
@@ -228,7 +234,7 @@ const builtinCompletions = [
     label: "wait",
     kind: vscode.CompletionItemKind.Function,
     insertText: "wait ${1:100}",
-    detail: "Pause in HTML canvas mode"
+    detail: "Pause in canvas mode"
   },
   {
     label: "key",

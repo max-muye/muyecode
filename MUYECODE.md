@@ -74,6 +74,7 @@ Use `get` to say which helpers your program uses.
 ```muyecode
 get "canvas"
 get "random"
+get "time"
 ```
 
 Headers live in:
@@ -84,8 +85,9 @@ lib/
 
 Current headers:
 
-- `get "canvas"` for canvas, drawing, wait, and keyboard helpers
+- `get "canvas"` for canvas, drawing, and keyboard helpers
 - `get "random"` for `random(max)`
+- `get "time"` for `wait(ms)` and `sleep(ms)`
 
 Header files use `cmp` to say which compiler helper they enable, then `declare` lines for the names:
 
@@ -348,7 +350,7 @@ For animation, make your own class and write the loop yourself with `while true`
 
 Useful commands:
 
-- `wait ms` pauses inside canvas mode
+- `wait ms` pauses inside canvas mode when `get "time"` is used
 - `key("ArrowUp")` checks if a key is held
 - `pressed("ArrowUp")` checks if a key was pressed since the last check
 - `random(max)` returns a random integer from `0` to `max - 1`
@@ -360,6 +362,7 @@ Example:
 ```muyecode
 get "canvas"
 get "random"
+get "time"
 
 canvas 400 400 "black"
 class SnakeGame

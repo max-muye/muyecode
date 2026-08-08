@@ -14,7 +14,7 @@ It includes:
 - a compiler command: `./muyecodecmp`
 - classes and simpler aliases like `let`, `say`, and `change`
 - JavaScript output
-- canvas window output for programs that use `canvas`, `wait`, `key(...)`, or `pressed(...)`
+- canvas window output for programs that use `canvas`, `key(...)`, `pressed(...)`, and time helpers
 - native macOS drawing executable output
 
 ## Get It
@@ -120,6 +120,7 @@ For movement or animation, make your own class and use `while true` with `wait`.
 ```muyecode
 get "canvas"
 get "random"
+get "time"
 
 canvas 400 400 "black"
 

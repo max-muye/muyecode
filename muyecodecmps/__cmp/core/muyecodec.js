@@ -1059,11 +1059,9 @@ function compileGet(line, lineNumber, options = {}) {
       continue;
     }
 
-    if (!headerLine.startsWith("declare ")) {
-      throw new Error(`Line ${lineNumber}: ${headerPath} line ${index + 1} must use cmp or declare`);
+    if (headerLine.startsWith("declare ")) {
+      compileDeclare(headerLine, index + 1);
     }
-
-    compileDeclare(headerLine, index + 1);
   }
 
   if (compilerName !== libraryName) {
@@ -1078,13 +1076,21 @@ function assertImports(line, lineNumber, imports) {
     throw new Error(`Line ${lineNumber}: use get "canvas" before canvas helpers`);
   }
 
+  if (usesTimeLibrary(line) && !imports.has("time")) {
+    throw new Error(`Line ${lineNumber}: use get "time" before wait/sleep`);
+  }
+
   if (usesRandomLibrary(line) && !imports.has("random")) {
     throw new Error(`Line ${lineNumber}: use get "random" before random(max)`);
   }
 }
 
 function usesCanvasLibrary(line) {
-  return /^(canvas|pen|fill|line|rect|box|circle|text|clear|wait|sleep)\b/.test(line) || /\b(?:key|pressed)\s*\(/.test(line);
+  return /^(canvas|pen|fill|line|rect|box|circle|text|clear)\b/.test(line) || /\b(?:key|pressed)\s*\(/.test(line);
+}
+
+function usesTimeLibrary(line) {
+  return /^(wait|sleep)\b/.test(line);
 }
 
 function usesRandomLibrary(line) {

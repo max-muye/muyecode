@@ -1,5 +1,6 @@
 get "canvas"
 get "random"
+get "time"
 
 canvas 400 400 "black"
 

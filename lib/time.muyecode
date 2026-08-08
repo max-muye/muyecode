@@ -1,0 +1,6 @@
+# Muyecode time header
+
+cmp "time"
+
+declare wait(ms)
+declare sleep(ms)
