@@ -9,6 +9,11 @@ class SnakeGame
     value score = 0
     value alive = true
     value running = true
+    value moves = []
+    value upPressed = false
+    value downPressed = false
+    value leftPressed = false
+    value rightPressed = false
 
     method newFood()
         return {x: random(20) * this.size, y: random(20) * this.size}
@@ -22,6 +27,31 @@ class SnakeGame
         change this.score = 0
         change this.alive = true
         change this.running = true
+        change this.moves = []
+        change this.upPressed = false
+        change this.downPressed = false
+        change this.leftPressed = false
+        change this.rightPressed = false
+    end
+
+    method queueMove(x, y)
+        let last = {x: this.dx, y: this.dy}
+
+        if len(this.moves) > 0
+            change last = this.moves[len(this.moves) - 1]
+        end
+
+        if (x != last.x || y != last.y) && (x + last.x != 0 || y + last.y != 0)
+            this.moves.push({x: x, y: y})
+        end
+    end
+
+    method useQueuedMove()
+        if len(this.moves) > 0
+            let move = this.moves.shift()
+            change this.dx = move.x
+            change this.dy = move.y
+        end
     end
 
     method readKeys()
@@ -33,28 +63,46 @@ class SnakeGame
             change this.running = false
         end
 
-        if key("ArrowUp") && this.dy == 0
-            change this.dx = 0
-            change this.dy = -this.size
+        if key("w") || key("W") || key("ArrowUp")
+            if !this.upPressed
+                this.queueMove(0, -this.size)
+            end
+            change this.upPressed = true
+        else
+            change this.upPressed = false
         end
 
-        if key("ArrowDown") && this.dy == 0
-            change this.dx = 0
-            change this.dy = this.size
+        if key("s") || key("S") || key("ArrowDown")
+            if !this.downPressed
+                this.queueMove(0, this.size)
+            end
+            change this.downPressed = true
+        else
+            change this.downPressed = false
         end
 
-        if key("ArrowLeft") && this.dx == 0
-            change this.dx = -this.size
-            change this.dy = 0
+        if key("a") || key("A") || key("ArrowLeft")
+            if !this.leftPressed
+                this.queueMove(-this.size, 0)
+            end
+            change this.leftPressed = true
+        else
+            change this.leftPressed = false
         end
 
-        if key("ArrowRight") && this.dx == 0
-            change this.dx = this.size
-            change this.dy = 0
+        if key("d") || key("D") || key("ArrowRight")
+            if !this.rightPressed
+                this.queueMove(this.size, 0)
+            end
+            change this.rightPressed = true
+        else
+            change this.rightPressed = false
         end
     end
 
     method move()
+        this.useQueuedMove()
+
         let head = {x: this.snake[0].x + this.dx, y: this.snake[0].y + this.dy}
 
         if head.x < 0 || head.x >= 400 || head.y < 0 || head.y >= 400
