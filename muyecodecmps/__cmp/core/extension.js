@@ -365,8 +365,13 @@ async function maybeInsertEnd(event) {
   const indentUnit = getIndentUnit(editor);
   const nextLine = event.document.lineAt(nextLineNumber).text;
   const wantedIndent = `${baseIndent}${indentUnit}`;
+  const followingLineNumber = nextLineNumber + 1;
+  const followingLine = followingLineNumber < event.document.lineCount ? event.document.lineAt(followingLineNumber).text : "";
   const changed = await editor.edit((edit) => {
-    if (nextLine.trim() === "") {
+    if (nextLine.trim() === "" && followingLine.trim() === "end") {
+      const range = new vscode.Range(nextLineNumber, 0, nextLineNumber, nextLine.length);
+      edit.replace(range, wantedIndent);
+    } else if (nextLine.trim() === "") {
       const range = new vscode.Range(nextLineNumber, 0, nextLineNumber, nextLine.length);
       edit.replace(range, `${wantedIndent}\n${baseIndent}end`);
     } else {
