@@ -7,3 +7,5 @@ declare wait(ms)
 method sleep(s)
     wait s * 1000
 end
+
+method wait_s = sleep

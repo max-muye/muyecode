@@ -344,6 +344,11 @@ class Compiler {
     }
 
     if (rawLine.startsWith("method ")) {
+      if (isMethodAlias(rawLine)) {
+        this.pushLine(compileMethodAlias(rawLine, lineNumber));
+        return;
+      }
+
       this.compileMethod(rawLine, lineNumber);
       return;
     }
@@ -573,6 +578,11 @@ class HtmlCompiler {
     }
 
     if (rawLine.startsWith("method ")) {
+      if (isMethodAlias(rawLine)) {
+        this.pushLine(compileMethodAlias(rawLine, lineNumber));
+        return;
+      }
+
       this.compileMethod(rawLine, lineNumber);
       return;
     }
@@ -1157,6 +1167,20 @@ function compileDeclare(line, lineNumber) {
   }
 
   return "";
+}
+
+function isMethodAlias(line) {
+  return /^method\s+[A-Za-z_][A-Za-z0-9_]*\s*=/.test(line);
+}
+
+function compileMethodAlias(line, lineNumber) {
+  const match = line.match(/^method\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*([A-Za-z_][A-Za-z0-9_]*)$/);
+
+  if (!match) {
+    throw new Error(`Line ${lineNumber}: expected method name = otherName`);
+  }
+
+  return `const ${match[1]} = ${match[2]};`;
 }
 
 function compileCmp(line, lineNumber) {
