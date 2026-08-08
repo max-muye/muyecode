@@ -1,0 +1,327 @@
+get "canvas/gui"
+get "random"
+get "time"
+
+canvas 720 460 "#0f5132"
+
+class PokerGame
+    value ranks = ["?", "?", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
+    value suits = ["C", "D", "H", "S"]
+    value deck = []
+    value hand = []
+    value held = [false, false, false, false, false]
+    value stage = "ready"
+    value message = "Press D to deal"
+    value result = ""
+    value credits = 100
+    value bet = 5
+    value payout = 0
+
+    method resetDeck()
+        change this.deck = []
+        let card = 0
+        while card < 52
+            this.deck.push(card)
+            change card = card + 1
+        end
+    end
+
+    method drawFromDeck()
+        let index = rand_int(0, len(this.deck) - 1)
+        let card = this.deck[index]
+        this.deck.splice(index, 1)
+        return card
+    end
+
+    method deal()
+        if this.credits < this.bet
+            change this.message = "No credits left. Press R to reset."
+            return null
+        end
+
+        this.resetDeck()
+        change this.hand = []
+        change this.held = [false, false, false, false, false]
+        change this.result = ""
+        change this.payout = 0
+        change this.credits = this.credits - this.bet
+
+        let i = 0
+        while i < 5
+            this.hand.push(this.drawFromDeck())
+            change i = i + 1
+        end
+
+        change this.stage = "draw"
+        change this.message = "Press 1-5 to hold cards, then N to draw"
+    end
+
+    method toggleHold(index)
+        if this.stage == "draw"
+            this.held.splice(index, 1, !this.held[index])
+        end
+    end
+
+    method drawHeld()
+        if this.stage != "draw"
+            return null
+        end
+
+        let i = 0
+        while i < 5
+            if !this.held[i]
+                this.hand.splice(i, 1, this.drawFromDeck())
+            end
+            change i = i + 1
+        end
+
+        change this.result = this.evaluate()
+        change this.payout = this.payoutFor(this.result)
+        change this.credits = this.credits + this.payout
+        change this.stage = "done"
+        change this.message = "Press D to deal again, R reset, Q quit"
+    end
+
+    method reset()
+        change this.credits = 100
+        change this.hand = []
+        change this.held = [false, false, false, false, false]
+        change this.stage = "ready"
+        change this.message = "Press D to deal"
+        change this.result = ""
+        change this.payout = 0
+    end
+
+    method rank(card)
+        return card % 13 + 2
+    end
+
+    method suit(card)
+        return Math.floor(card / 13)
+    end
+
+    method cardName(card)
+        return this.ranks[this.rank(card)] + this.suits[this.suit(card)]
+    end
+
+    method countRank(rank)
+        let total = 0
+        let i = 0
+        while i < len(this.hand)
+            if this.rank(this.hand[i]) == rank
+                change total = total + 1
+            end
+            change i = i + 1
+        end
+        return total
+    end
+
+    method isFlush()
+        if len(this.hand) < 5
+            return false
+        end
+
+        let suit = this.suit(this.hand[0])
+        let i = 1
+        while i < 5
+            if this.suit(this.hand[i]) != suit
+                return false
+            end
+            change i = i + 1
+        end
+        return true
+    end
+
+    method isStraight()
+        let start = 2
+        while start <= 10
+            if this.countRank(start) == 1 && this.countRank(start + 1) == 1 && this.countRank(start + 2) == 1 && this.countRank(start + 3) == 1 && this.countRank(start + 4) == 1
+                return true
+            end
+            change start = start + 1
+        end
+
+        if this.countRank(14) == 1 && this.countRank(2) == 1 && this.countRank(3) == 1 && this.countRank(4) == 1 && this.countRank(5) == 1
+            return true
+        end
+
+        return false
+    end
+
+    method groups()
+        let pairs = 0
+        let threes = 0
+        let fours = 0
+        let rank = 2
+        while rank <= 14
+            let count = this.countRank(rank)
+            if count == 2
+                change pairs = pairs + 1
+            end
+            if count == 3
+                change threes = threes + 1
+            end
+            if count == 4
+                change fours = fours + 1
+            end
+            change rank = rank + 1
+        end
+        return {pairs: pairs, threes: threes, fours: fours}
+    end
+
+    method evaluate()
+        let flush = this.isFlush()
+        let straight = this.isStraight()
+        let group = this.groups()
+
+        if flush && straight && this.countRank(10) == 1 && this.countRank(14) == 1
+            return "Royal Flush"
+        end
+        if flush && straight
+            return "Straight Flush"
+        end
+        if group.fours == 1
+            return "Four of a Kind"
+        end
+        if group.threes == 1 && group.pairs == 1
+            return "Full House"
+        end
+        if flush
+            return "Flush"
+        end
+        if straight
+            return "Straight"
+        end
+        if group.threes == 1
+            return "Three of a Kind"
+        end
+        if group.pairs == 2
+            return "Two Pair"
+        end
+        if group.pairs == 1
+            return "One Pair"
+        end
+        return "High Card"
+    end
+
+    method payoutFor(name)
+        if name == "Royal Flush"
+            return 250
+        end
+        if name == "Straight Flush"
+            return 50
+        end
+        if name == "Four of a Kind"
+            return 25
+        end
+        if name == "Full House"
+            return 9
+        end
+        if name == "Flush"
+            return 6
+        end
+        if name == "Straight"
+            return 4
+        end
+        if name == "Three of a Kind"
+            return 3
+        end
+        if name == "Two Pair"
+            return 2
+        end
+        if name == "One Pair"
+            return 1
+        end
+        return 0
+    end
+
+    method readKeys()
+        if pressed("q") || pressed("Q")
+            quit()
+        end
+        if pressed("r") || pressed("R")
+            this.reset()
+        end
+        if pressed("d") || pressed("D")
+            this.deal()
+        end
+        if pressed("n") || pressed("N")
+            this.drawHeld()
+        end
+        if pressed("1")
+            this.toggleHold(0)
+        end
+        if pressed("2")
+            this.toggleHold(1)
+        end
+        if pressed("3")
+            this.toggleHold(2)
+        end
+        if pressed("4")
+            this.toggleHold(3)
+        end
+        if pressed("5")
+            this.toggleHold(4)
+        end
+    end
+
+    method drawCardAt(index, x, y)
+        fill "white"
+        if this.held[index]
+            fill "#fde68a"
+        end
+        pen "#111827" 3
+        rect x y 108 150
+
+        let labelX = x + 25
+        let labelY = y + 85
+        pen "#111827" 1
+        text labelX labelY this.cardName(this.hand[index]) 32
+
+        if this.held[index]
+            let holdX = x + 28
+            let holdY = y + 132
+            pen "#92400e" 1
+            text holdX holdY "HELD" 18
+        end
+    end
+
+    method draw()
+        clear "#0f5132"
+        pen "white" 1
+        text 24 38 "Muyecode Poker" 30
+        text 24 72 "D deal   1-5 hold   N draw   R reset   Q quit" 18
+        text 24 104 this.message 18
+        text 520 38 "Credits" 18
+        text 610 38 this.credits 18
+        text 520 68 "Bet" 18
+        text 610 68 this.bet 18
+
+        if len(this.hand) == 5
+            this.drawCardAt(0, 30, 150)
+            this.drawCardAt(1, 165, 150)
+            this.drawCardAt(2, 300, 150)
+            this.drawCardAt(3, 435, 150)
+            this.drawCardAt(4, 570, 150)
+        end
+
+        if this.result != ""
+            pen "#facc15" 1
+            text 250 360 this.result 32
+            pen "white" 1
+            text 270 400 "Payout:" 20
+            text 360 400 this.payout 20
+        end
+    end
+
+    method run()
+        while true
+            this.readKeys()
+            this.draw()
+            wait 80
+        end
+    end
+end
+
+let game = new PokerGame()
+game.run()

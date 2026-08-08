@@ -18,6 +18,9 @@
     "muyecodec": "./muyecodecmps/__cmp/core/muyecodec.js",
     "muyecodecmp": "./muyecodecmp"
   },
+  "scripts": {
+    "test": "node tests/run_tests.js"
+  },
   "contributes": {
     "languages": [
       {

@@ -159,6 +159,22 @@ The full snake example is in:
 examples/snake.muyecode
 ```
 
+## Poker Game
+
+Run the video poker example:
+
+```sh
+./muyecodecmp examples/poker.muyecode -o run
+```
+
+Controls:
+
+- `D` deal
+- `1`-`5` hold cards
+- `N` draw replacements
+- `R` reset credits
+- `Q` quit
+
 ## Native GUI Window
 
 Create a simple GUI app with `get "canvas/gui"`:
@@ -203,6 +219,16 @@ print guivalue("ready")
 ```
 
 There is a complete input example in `examples/gui_inputs.muyecode`.
+
+## Tests
+
+Run:
+
+```sh
+npm test
+```
+
+The tests compile the poker game and GUI examples, then check that the expected outputs and poker scoring rules are present.
 
 ## Notes
 
