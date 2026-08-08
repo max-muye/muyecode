@@ -56,6 +56,7 @@ function resolveOutputPath(options, source = "") {
 
   const sourceName = path.basename(options.inputPath, path.extname(options.inputPath));
   const outputDir = "muyecodecmps";
+  const baseDir = path.dirname(path.resolve(options.inputPath));
 
   if (options.makeExecutable && !options.outputPath) {
     return getDefaultExecutablePath(outputDir, sourceName);
@@ -66,7 +67,7 @@ function resolveOutputPath(options, source = "") {
     return getDefaultExecutablePath(outputDir, sourceName);
   }
 
-  if (needsNativeOutput(source)) {
+  if (needsNativeOutput(source) || sourceImportsCompiler(source, "gui", baseDir)) {
     options.makeExecutable = true;
     return getDefaultExecutablePath(outputDir, sourceName);
   }
@@ -191,18 +192,26 @@ function compileTkinter(source, options = {}) {
 
 function compileNativeExecutable(source, outputPath, inputPath) {
   const objectiveCPath = getCompilerModulePath(inputPath, outputPath, ".m");
+  const compileOptions = { baseDir: path.dirname(path.resolve(inputPath)) };
+  const isGuiCanvasApp = sourceImportsCompiler(source, "gui", compileOptions.baseDir) && needsHtmlOutput(source);
+  const objectiveCSource = isGuiCanvasApp ? compileWebViewApp(source, compileOptions) : compileCocoa(source, compileOptions);
+  const frameworks = isGuiCanvasApp ? ["Cocoa", "WebKit"] : ["Cocoa"];
   fs.mkdirSync(path.dirname(objectiveCPath), { recursive: true });
-  fs.writeFileSync(objectiveCPath, compileCocoa(source, { baseDir: path.dirname(path.resolve(inputPath)) }));
+  fs.writeFileSync(objectiveCPath, objectiveCSource);
 
-  const result = childProcess.spawnSync("clang", [
+  const clangArgs = [
     "-x",
     "objective-c",
-    objectiveCPath,
-    "-framework",
-    "Cocoa",
-    "-o",
-    outputPath
-  ], {
+    objectiveCPath
+  ];
+
+  for (const framework of frameworks) {
+    clangArgs.push("-framework", framework);
+  }
+
+  clangArgs.push("-o", outputPath);
+
+  const result = childProcess.spawnSync("clang", clangArgs, {
     encoding: "utf8"
   });
 
@@ -228,6 +237,41 @@ function compileCocoa(source, options = {}) {
   }
 
   return compiler.finish();
+}
+
+function compileWebViewApp(source, options = {}) {
+  const html = compileHtml(source, options);
+  const size = getCanvasSize(source, options);
+
+  return [
+    "#import <Cocoa/Cocoa.h>",
+    "#import <WebKit/WebKit.h>",
+    "",
+    "@interface MuyecodeAppDelegate : NSObject <NSApplicationDelegate> @end",
+    "@implementation MuyecodeAppDelegate",
+    "- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)sender { return YES; }",
+    "@end",
+    "",
+    "int main(int argc, const char *argv[]) {",
+    "  @autoreleasepool {",
+    "    NSApplication *app = [NSApplication sharedApplication];",
+    "    MuyecodeAppDelegate *delegate = [MuyecodeAppDelegate new];",
+    "    [app setDelegate:delegate];",
+    "    [app setActivationPolicy:NSApplicationActivationPolicyRegular];",
+    `    NSWindow *window = [[NSWindow alloc] initWithContentRect:NSMakeRect(100, 100, ${size.width}, ${size.height}) styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable) backing:NSBackingStoreBuffered defer:NO];`,
+    "    [window setTitle:@\"Muyecode GUI\"];",
+    "    WKWebView *view = [[WKWebView alloc] initWithFrame:NSMakeRect(0, 0, window.contentView.bounds.size.width, window.contentView.bounds.size.height)];",
+    "    [view setAutoresizingMask:(NSViewWidthSizable | NSViewHeightSizable)];",
+    "    [window setContentView:view];",
+    `    [view loadHTMLString:${objcRawString(html)} baseURL:nil];`,
+    "    [window makeKeyAndOrderFront:nil];",
+    "    [app activateIgnoringOtherApps:YES];",
+    "    [app run];",
+    "  }",
+    "  return 0;",
+    "}",
+    ""
+  ].join("\n");
 }
 
 function openFile(filePath) {
@@ -1359,6 +1403,42 @@ function compileGet(line, lineNumber, options = {}) {
   return { name: compilerName, lines: importedLines };
 }
 
+function sourceImportsCompiler(source, compilerName, baseDir = process.cwd(), seen = new Set()) {
+  const lines = source.split(/\r?\n/);
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = stripComment(lines[index]).trim();
+
+    if (!line.startsWith("get ")) {
+      continue;
+    }
+
+    try {
+      const header = compileGet(line, index + 1, { baseDir });
+
+      if (header.name === compilerName) {
+        return true;
+      }
+
+      const key = `${baseDir}:${line}`;
+
+      if (seen.has(key)) {
+        continue;
+      }
+
+      seen.add(key);
+
+      if (sourceImportsCompiler(header.lines.map((headerLine) => headerLine.text).join("\n"), compilerName, baseDir, seen)) {
+        return true;
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return false;
+}
+
 function getLibraryCompilerName(libraryPath, lineNumber) {
   if (!/^[A-Za-z_][A-Za-z0-9_]*(?:\/[A-Za-z_][A-Za-z0-9_]*)*$/.test(libraryPath)) {
     throw new Error(`Line ${lineNumber}: invalid header name "${libraryPath}"`);
@@ -1689,6 +1769,38 @@ function splitCommandArgs(text) {
   return args;
 }
 
+function getCanvasSize(source, options = {}) {
+  const lines = source.split(/\r?\n/);
+
+  for (let lineNumber = 0; lineNumber < lines.length; lineNumber += 1) {
+    const line = stripComment(lines[lineNumber]).trim();
+
+    if (line.startsWith("get ")) {
+      try {
+        const header = compileGet(line, lineNumber + 1, options);
+        const size = getCanvasSize(header.lines.map((headerLine) => headerLine.text).join("\n"), options);
+
+        if (size.found) {
+          return size;
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    if (line.startsWith("canvas ")) {
+      const args = splitCommandArgs(line.slice("canvas ".length).trim());
+      return {
+        found: true,
+        width: Number(stripQuotes(args[0])) || 640,
+        height: Number(stripQuotes(args[1])) || 420
+      };
+    }
+  }
+
+  return { found: false, width: 640, height: 420 };
+}
+
 function stripQuotes(value) {
   return String(value).replace(/^["']|["']$/g, "");
 }
@@ -1707,6 +1819,11 @@ function toPythonExpression(value) {
 
 function objcString(value) {
   const text = stripQuotes(value).replace(/\\/g, "\\\\").replace(/"/g, "\\\"");
+  return `@"${text}"`;
+}
+
+function objcRawString(value) {
+  const text = String(value).replace(/\\/g, "\\\\").replace(/"/g, "\\\"").replace(/\n/g, "\\n");
   return `@"${text}"`;
 }
 
