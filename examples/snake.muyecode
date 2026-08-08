@@ -10,10 +10,6 @@ class SnakeGame
     value alive = true
     value running = true
     value moves = []
-    value upPressed = false
-    value downPressed = false
-    value leftPressed = false
-    value rightPressed = false
 
     method newFood()
         return {x: random(20) * this.size, y: random(20) * this.size}
@@ -28,10 +24,6 @@ class SnakeGame
         change this.alive = true
         change this.running = true
         change this.moves = []
-        change this.upPressed = false
-        change this.downPressed = false
-        change this.leftPressed = false
-        change this.rightPressed = false
     end
 
     method queueMove(x, y)
@@ -55,48 +47,28 @@ class SnakeGame
     end
 
     method readKeys()
-        if key("r") || key("R")
+        if pressed("r") || pressed("R")
             this.reset()
         end
 
-        if key("q") || key("Q")
+        if pressed("q") || pressed("Q")
             change this.running = false
         end
 
-        if key("w") || key("W") || key("ArrowUp")
-            if !this.upPressed
-                this.queueMove(0, -this.size)
-            end
-            change this.upPressed = true
-        else
-            change this.upPressed = false
+        if pressed("w") || pressed("W") || pressed("ArrowUp")
+            this.queueMove(0, -this.size)
         end
 
-        if key("s") || key("S") || key("ArrowDown")
-            if !this.downPressed
-                this.queueMove(0, this.size)
-            end
-            change this.downPressed = true
-        else
-            change this.downPressed = false
+        if pressed("s") || pressed("S") || pressed("ArrowDown")
+            this.queueMove(0, this.size)
         end
 
-        if key("a") || key("A") || key("ArrowLeft")
-            if !this.leftPressed
-                this.queueMove(-this.size, 0)
-            end
-            change this.leftPressed = true
-        else
-            change this.leftPressed = false
+        if pressed("a") || pressed("A") || pressed("ArrowLeft")
+            this.queueMove(-this.size, 0)
         end
 
-        if key("d") || key("D") || key("ArrowRight")
-            if !this.rightPressed
-                this.queueMove(this.size, 0)
-            end
-            change this.rightPressed = true
-        else
-            change this.rightPressed = false
+        if pressed("d") || pressed("D") || pressed("ArrowRight")
+            this.queueMove(this.size, 0)
         end
     end
 

@@ -69,7 +69,7 @@ function resolveOutputPath(options, source = "") {
 }
 
 function needsHtmlOutput(source) {
-  return /(^|\n)\s*(?:canvas|wait|sleep)\b/.test(source) || /\bkey\s*\(/.test(source);
+  return /(^|\n)\s*(?:canvas|wait|sleep)\b/.test(source) || /\b(?:key|pressed)\s*\(/.test(source);
 }
 
 function getDefaultExecutablePath(outputDir, sourceName) {
@@ -657,8 +657,10 @@ class HtmlCompiler {
       "    const push = (list, value) => list.push(value);",
       "    const removefirst = (list) => list.shift();",
       "    const keys = {};",
+      "    const keyPresses = {};",
       "    const key = (name) => !!keys[name];",
-      "    window.addEventListener(\"keydown\", (event) => { keys[event.key] = true; });",
+      "    const pressed = (name) => { const count = keyPresses[name] || 0; if (count > 0) keyPresses[name] = count - 1; return count > 0; };",
+      "    window.addEventListener(\"keydown\", (event) => { if (!keys[event.key]) keyPresses[event.key] = (keyPresses[event.key] || 0) + 1; keys[event.key] = true; event.preventDefault(); });",
       "    window.addEventListener(\"keyup\", (event) => { keys[event.key] = false; });",
       `    ctx.fillStyle = ${this.background};`,
       "    ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);",

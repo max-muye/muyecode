@@ -210,7 +210,13 @@ const builtinCompletions = [
     label: "key",
     kind: vscode.CompletionItemKind.Function,
     insertText: "key(${1:\"ArrowUp\"})",
-    detail: "Check keyboard state in HTML canvas mode"
+    detail: "Check if a key is held in canvas mode"
+  },
+  {
+    label: "pressed",
+    kind: vscode.CompletionItemKind.Function,
+    insertText: "pressed(${1:\"ArrowUp\"})",
+    detail: "Check if a key was pressed in canvas mode"
   },
   {
     label: "random",

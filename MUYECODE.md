@@ -320,7 +320,8 @@ For animation, make your own class and write the loop yourself with `while true`
 Useful commands:
 
 - `wait ms` pauses inside canvas mode
-- `key("ArrowUp")` checks if a key is pressed
+- `key("ArrowUp")` checks if a key is held
+- `pressed("ArrowUp")` checks if a key was pressed since the last check
 - `random(max)` returns a random integer from `0` to `max - 1`
 - `clear color` clears the whole canvas
 - `box x y size` draws a filled square
@@ -357,7 +358,7 @@ Run the snake example:
 ./muyecodecmp examples/snake.muyecode -o run
 ```
 
-Files that use `canvas`, `wait`, `sleep`, or `key(...)` automatically compile to a canvas window when no output filename is provided.
+Files that use `canvas`, `wait`, `sleep`, `key(...)`, or `pressed(...)` automatically compile to a canvas window when no output filename is provided.
 
 ## Complete Example
 

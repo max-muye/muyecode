@@ -13,7 +13,7 @@ It includes:
 - a compiler command: `./muyecodecmp`
 - classes and simpler aliases like `let`, `say`, and `change`
 - JavaScript output
-- canvas window output for programs that use `canvas`, `wait`, or `key(...)`
+- canvas window output for programs that use `canvas`, `wait`, `key(...)`, or `pressed(...)`
 - native macOS drawing executable output
 
 ## Get It
@@ -143,7 +143,7 @@ game.run()
 ./muyecodecmp snake.muyecode -o run
 ```
 
-Files that use `canvas`, `wait`, `sleep`, or `key(...)` automatically open as a canvas window when no output filename is provided.
+Files that use `canvas`, `wait`, `sleep`, `key(...)`, or `pressed(...)` automatically open as a canvas window when no output filename is provided.
 
 The full snake example is in:
 
